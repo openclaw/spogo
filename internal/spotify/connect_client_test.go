@@ -2,6 +2,7 @@ package spotify
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"testing"
 )
@@ -100,5 +101,116 @@ func TestConnectUnsupported(t *testing.T) {
 	}
 	if err := client.RemoveTracks(context.Background(), "p1", nil); err == nil {
 		t.Fatalf("expected error")
+	}
+	if _, err := client.GetUsersTopTracks(context.Background(), "long_term", 20, 0); err == nil {
+		t.Fatalf("expected error")
+	}
+	if _, err := client.GetRecentlyPlayed(context.Background(), 20, 0, 0); err == nil {
+		t.Fatalf("expected error")
+	}
+}
+
+func TestConnectUserReadsUseWebPlayerEndpoints(t *testing.T) {
+	transport := roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+		switch req.URL.Query().Get("operationName") {
+		case "userTopContent":
+			vars := req.URL.Query().Get("variables")
+			if vars == "" {
+				t.Fatalf("missing top content variables")
+			}
+			var variables map[string]any
+			if err := json.Unmarshal([]byte(vars), &variables); err != nil {
+				t.Fatalf("decode top content variables: %v", err)
+			}
+			topInput, ok := variables["topTracksInput"].(map[string]any)
+			if !ok {
+				t.Fatalf("missing topTracksInput")
+			}
+			if topInput["sortBy"] != "AFFINITY" || topInput["timeRange"] != "SHORT_TERM" {
+				t.Fatalf("unexpected topTracksInput: %#v", topInput)
+			}
+			if req.URL.Query().Get("extensions") == "" {
+				t.Fatalf("missing top content extensions")
+			}
+			return jsonResponse(http.StatusOK, map[string]any{
+				"data": map[string]any{"me": map[string]any{"profile": map[string]any{
+					"topTracks": map[string]any{
+						"totalCount": 1,
+						"items": []any{
+							map[string]any{"data": map[string]any{
+								"uri":          "spotify:track:t1",
+								"name":         "Track",
+								"albumOfTrack": map[string]any{"name": "Album"},
+								"artists": map[string]any{"items": []any{
+									map[string]any{"profile": map[string]any{"name": "Artist"}},
+								}},
+							}},
+						},
+					},
+				}}},
+			}), nil
+		case "profileAttributes":
+			return jsonResponse(http.StatusOK, map[string]any{
+				"data": map[string]any{"me": map[string]any{"profile": map[string]any{
+					"uri":      "spotify:user:user1",
+					"username": "user1",
+				}}},
+			}), nil
+		case "fetchEntitiesForRecentlyPlayed":
+			return jsonResponse(http.StatusOK, map[string]any{
+				"data": map[string]any{"lookup": []any{
+					map[string]any{
+						"_uri": "spotify:track:t1",
+						"data": map[string]any{
+							"uri":          "spotify:track:t1",
+							"name":         "Track",
+							"albumOfTrack": map[string]any{"name": "Album"},
+							"artists": map[string]any{"items": []any{
+								map[string]any{"profile": map[string]any{"name": "Artist"}},
+							}},
+						},
+					},
+				}},
+			}), nil
+		}
+		if req.URL.Host == "spclient.wg.spotify.com" && req.URL.Path == "/recently-played/v3/user/user1/recently-played" {
+			if got := req.URL.Query().Get("limit"); got != "50" {
+				t.Fatalf("history page limit = %q, want 50", got)
+			}
+			if got := req.URL.Query().Get("offset"); got != "0" {
+				t.Fatalf("history offset = %q, want 0", got)
+			}
+			return jsonResponse(http.StatusOK, recentlyPlayedContextsResponse{
+				PlayContexts: []recentlyPlayedContext{
+					{
+						URI:                "spotify:playlist:p1",
+						LastPlayedTime:     1705312800000,
+						LastPlayedTrackURI: "spotify:track:t1",
+					},
+				},
+			}), nil
+		}
+		return textResponse(http.StatusNotFound, "missing"), nil
+	})
+	client := newConnectClientForTests(transport)
+	client.hashes.hashes["userTopContent"] = "hash"
+	client.hashes.hashes["profileAttributes"] = "hash"
+	client.hashes.hashes["fetchEntitiesForRecentlyPlayed"] = "hash"
+	top, err := client.GetUsersTopTracks(context.Background(), "short_term", 5, 1)
+	if err != nil {
+		t.Fatalf("top tracks: %v", err)
+	}
+	if top.Total != 1 || top.Limit != 5 || top.Offset != 1 || len(top.Items) != 1 || top.Items[0].Album != "Album" {
+		t.Fatalf("unexpected top tracks: %#v", top)
+	}
+	history, err := client.GetRecentlyPlayed(context.Background(), 6, 0, 1705312800001)
+	if err != nil {
+		t.Fatalf("recently played: %v", err)
+	}
+	if history.Limit != 6 || history.Cursors == nil || history.Cursors.Before != "1705312800000" || len(history.Items) != 1 {
+		t.Fatalf("unexpected recently played: %#v", history)
+	}
+	if history.Items[0].Track.Name != "Track" || history.Items[0].PlayedAt != "2024-01-15T10:00:00.000Z" {
+		t.Fatalf("unexpected recently played item: %#v", history.Items[0])
 	}
 }

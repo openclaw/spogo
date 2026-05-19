@@ -17,6 +17,8 @@ type apiStub struct {
 	artistTopTracksFn func(context.Context, string, int) ([]Item, error)
 	addTracksFn       func(context.Context, string, []string) error
 	removeTracksFn    func(context.Context, string, []string) error
+	topTracksFn       func(context.Context, string, int, int) (TopTracksResult, error)
+	recentlyPlayedFn  func(context.Context, int, int64, int64) (RecentlyPlayedResult, error)
 }
 
 func (a apiStub) Search(ctx context.Context, kind, query string, limit, offset int) (SearchResult, error) {
@@ -202,6 +204,22 @@ func (a apiStub) RemoveTracks(ctx context.Context, playlistID string, uris []str
 		return a.removeTracksFn(ctx, playlistID, uris)
 	}
 	return nil
+}
+
+func (a apiStub) GetUsersTopTracks(ctx context.Context, timeRange string, limit, offset int) (TopTracksResult, error) {
+	a.note("GetUsersTopTracks")
+	if a.topTracksFn != nil {
+		return a.topTracksFn(ctx, timeRange, limit, offset)
+	}
+	return TopTracksResult{}, nil
+}
+
+func (a apiStub) GetRecentlyPlayed(ctx context.Context, limit int, after, before int64) (RecentlyPlayedResult, error) {
+	a.note("GetRecentlyPlayed")
+	if a.recentlyPlayedFn != nil {
+		return a.recentlyPlayedFn(ctx, limit, after, before)
+	}
+	return RecentlyPlayedResult{}, nil
 }
 
 func (a apiStub) note(name string) {
@@ -450,8 +468,55 @@ func TestFallbackDelegatesToWeb(t *testing.T) {
 	if err := client.RemoveTracks(ctx, "p1", []string{"spotify:track:t1"}); err != nil {
 		t.Fatalf("remove tracks: %v", err)
 	}
+	if _, err := client.GetUsersTopTracks(ctx, "long_term", 20, 0); err != nil {
+		t.Fatalf("top tracks: %v", err)
+	}
+	if _, err := client.GetRecentlyPlayed(ctx, 20, 0, 0); err != nil {
+		t.Fatalf("recently played: %v", err)
+	}
 
-	if calls["GetTrack"] == 0 || calls["Queue"] == 0 || calls["RemoveTracks"] == 0 {
+	if calls["GetTrack"] == 0 || calls["Queue"] == 0 || calls["RemoveTracks"] == 0 || calls["GetUsersTopTracks"] == 0 || calls["GetRecentlyPlayed"] == 0 {
 		t.Fatalf("expected web calls to be recorded")
+	}
+}
+
+func TestFallbackUserReadsOnRateLimit(t *testing.T) {
+	ctx := context.Background()
+	calls := map[string]int{}
+	web := apiStub{
+		calls: calls,
+		topTracksFn: func(context.Context, string, int, int) (TopTracksResult, error) {
+			return TopTracksResult{}, APIError{Status: 429, Message: "rate limit"}
+		},
+		recentlyPlayedFn: func(context.Context, int, int64, int64) (RecentlyPlayedResult, error) {
+			return RecentlyPlayedResult{}, APIError{Status: 429, Message: "rate limit"}
+		},
+	}
+	connect := apiStub{
+		calls: calls,
+		topTracksFn: func(context.Context, string, int, int) (TopTracksResult, error) {
+			return TopTracksResult{Total: 1, Items: []Item{{ID: "t1"}}}, nil
+		},
+		recentlyPlayedFn: func(context.Context, int, int64, int64) (RecentlyPlayedResult, error) {
+			return RecentlyPlayedResult{Items: []RecentlyPlayedItem{{Track: Item{ID: "t1"}}}}, nil
+		},
+	}
+	client := NewPlaybackFallbackClient(web, connect)
+	top, err := client.GetUsersTopTracks(ctx, "short_term", 10, 2)
+	if err != nil {
+		t.Fatalf("top tracks: %v", err)
+	}
+	if top.Total != 1 || len(top.Items) != 1 {
+		t.Fatalf("unexpected top tracks result: %#v", top)
+	}
+	history, err := client.GetRecentlyPlayed(ctx, 10, 0, 123)
+	if err != nil {
+		t.Fatalf("recently played: %v", err)
+	}
+	if len(history.Items) != 1 {
+		t.Fatalf("unexpected recently played result: %#v", history)
+	}
+	if calls["GetUsersTopTracks"] != 2 || calls["GetRecentlyPlayed"] != 2 {
+		t.Fatalf("expected fallback calls: %#v", calls)
 	}
 }

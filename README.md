@@ -9,6 +9,7 @@
 - Play artists (starts with top tracks)
 - Queue management
 - Library management (save/remove/follow)
+- User listening data: top tracks by Spotify affinity and available recent plays
 - Playlist management (create/add/remove/list)
 - Device selection and status
 - Browser cookie import via `sweetcookie`
@@ -83,6 +84,7 @@ Commands:
 - `play [<id|url>] [--type ...] [--shuffle]`, `pause`, `next`, `prev`, `seek`, `volume`, `shuffle`, `repeat`, `status`
 - `queue add|show`
 - `library tracks|albums|artists|playlists`
+- `user top-tracks|history`
 - `playlist create|add|remove|tracks`
 - `device list|set`
 

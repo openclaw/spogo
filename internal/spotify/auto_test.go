@@ -197,11 +197,54 @@ func TestAutoPassThrough(t *testing.T) {
 	_, _ = client.CreatePlaylist(ctx, "name", false, false)
 	_ = client.AddTracks(ctx, "1", []string{"spotify:track:1"})
 	_ = client.RemoveTracks(ctx, "1", []string{"spotify:track:1"})
+	_, _ = client.GetUsersTopTracks(ctx, "long_term", 20, 0)
+	_, _ = client.GetRecentlyPlayed(ctx, 20, 0, 0)
 
 	if len(webCalls) != 0 {
 		t.Fatalf("expected no web calls, got %#v", webCalls)
 	}
-	if connectCalls["Search"] == 0 || connectCalls["Play"] == 0 || connectCalls["RemoveTracks"] == 0 {
+	if connectCalls["Search"] == 0 || connectCalls["Play"] == 0 || connectCalls["RemoveTracks"] == 0 || connectCalls["GetUsersTopTracks"] == 0 || connectCalls["GetRecentlyPlayed"] == 0 {
 		t.Fatalf("expected connect calls, got %#v", connectCalls)
+	}
+}
+
+func TestAutoUserReadsFallback(t *testing.T) {
+	ctx := context.Background()
+	calls := map[string]int{}
+	connect := apiStub{
+		calls: calls,
+		topTracksFn: func(context.Context, string, int, int) (TopTracksResult, error) {
+			return TopTracksResult{}, ErrUnsupported
+		},
+		recentlyPlayedFn: func(context.Context, int, int64, int64) (RecentlyPlayedResult, error) {
+			return RecentlyPlayedResult{}, ErrUnsupported
+		},
+	}
+	web := apiStub{
+		calls: calls,
+		topTracksFn: func(context.Context, string, int, int) (TopTracksResult, error) {
+			return TopTracksResult{Items: []Item{{ID: "t1"}}}, nil
+		},
+		recentlyPlayedFn: func(context.Context, int, int64, int64) (RecentlyPlayedResult, error) {
+			return RecentlyPlayedResult{Items: []RecentlyPlayedItem{{Track: Item{ID: "t1"}}}}, nil
+		},
+	}
+	client := NewAutoClient(connect, web)
+	top, err := client.GetUsersTopTracks(ctx, "medium_term", 5, 1)
+	if err != nil {
+		t.Fatalf("top tracks: %v", err)
+	}
+	if len(top.Items) != 1 {
+		t.Fatalf("unexpected top tracks result: %#v", top)
+	}
+	history, err := client.GetRecentlyPlayed(ctx, 5, 0, 123)
+	if err != nil {
+		t.Fatalf("recently played: %v", err)
+	}
+	if len(history.Items) != 1 {
+		t.Fatalf("unexpected recently played result: %#v", history)
+	}
+	if calls["GetUsersTopTracks"] != 2 || calls["GetRecentlyPlayed"] != 2 {
+		t.Fatalf("expected fallback calls, got %#v", calls)
 	}
 }

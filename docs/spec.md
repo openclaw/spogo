@@ -102,6 +102,16 @@ spogo [global flags] <command> [args]
 - `spogo library artists unfollow <id|url...>`
 - `spogo library playlists list [--limit N]`
 
+### user
+
+- `spogo user top-tracks [--period long_term|medium_term|short_term] [--limit N] [--offset N]`
+  - returns Spotify affinity-ranked tracks, not play counts
+  - `long_term` = years of listening data; `medium_term` = about 6 months; `short_term` = about 4 weeks
+- `spogo user history [--period long_term|medium_term|short_term] [--limit N] [--after <ms>] [--before <ms>]`
+  - returns retained recent plays available from Spotify, not a complete listening archive
+  - paginates backward with `before` cursors until it reaches `--limit`, the selected period, or Spotify's retained history; client cap is 200 items
+  - `medium_term`, `short_term`, and `--after` are local lower-bound filters
+
 ### playlists
 
 - `spogo playlist create <name> [--public] [--collab]`

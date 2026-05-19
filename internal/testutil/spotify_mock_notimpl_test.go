@@ -38,4 +38,6 @@ func TestSpotifyMockAllNotImplemented(t *testing.T) {
 	_, _ = m.CreatePlaylist(context.Background(), "name", true, false)
 	_ = m.AddTracks(context.Background(), "p", []string{"u"})
 	_ = m.RemoveTracks(context.Background(), "p", []string{"u"})
+	_, _ = m.GetUsersTopTracks(context.Background(), "long_term", 20, 0)
+	_, _ = m.GetRecentlyPlayed(context.Background(), 20, 0, 0)
 }

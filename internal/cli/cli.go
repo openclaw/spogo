@@ -41,6 +41,7 @@ type CLI struct {
 	Queue   QueueCmd   `kong:"cmd,help='Queue operations.'"`
 	Library LibraryCmd `kong:"cmd,help='Library operations.'"`
 	Device  DeviceCmd  `kong:"cmd,help='Playback devices.'"`
+	User    UserCmd    `kong:"cmd,help='User listening data.'"`
 }
 
 type Globals struct {
