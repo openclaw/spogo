@@ -1,3 +1,5 @@
+![spogo banner](docs/assets/readme-banner.jpg)
+
 # 🎧 spogo - Spotify, but make it terminal.
 
  Power CLI using web cookies. Search, control playback, manage library/playlists, and script with JSON/plain output.
