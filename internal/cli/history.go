@@ -136,7 +136,7 @@ func (cmd *UserHistoryCmd) Run(ctx *app.Context) error {
 			if cmd.Before > 0 && ms >= cmd.Before {
 				continue
 			}
-			if after > 0 && ms < after {
+			if after > 0 && ms <= after {
 				stopAtLowerBound = true
 				continue
 			}

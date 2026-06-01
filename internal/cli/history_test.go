@@ -611,7 +611,7 @@ func TestUserHistoryCmdAfterAndBeforeFilter(t *testing.T) {
 		},
 	}
 	ctx.SetSpotify(mock)
-	cmd := UserHistoryCmd{Period: "long_term", Limit: 20, After: 1705310000000, Before: 1705363200000}
+	cmd := UserHistoryCmd{Period: "long_term", Limit: 20, After: 1705312800000, Before: 1705363200000}
 	if err := cmd.Run(ctx); err != nil {
 		t.Fatalf("run: %v", err)
 	}
@@ -624,7 +624,7 @@ func TestUserHistoryCmdAfterAndBeforeFilter(t *testing.T) {
 	if err := json.Unmarshal(out.Bytes(), &payload); err != nil {
 		t.Fatalf("json: %v\n%s", err, out.String())
 	}
-	if payload.RequestedAfter != 1705310000000 || payload.RequestedBefore != 1705363200000 || payload.TotalFetched != 1 || len(payload.Items) != 1 || payload.Items[0].Track.ID != "t1" {
+	if payload.RequestedAfter != 1705312800000 || payload.RequestedBefore != 1705363200000 || payload.TotalFetched != 0 || len(payload.Items) != 0 {
 		t.Fatalf("unexpected payload: %#v", payload)
 	}
 	if callCount != 1 {
