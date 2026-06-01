@@ -75,3 +75,17 @@ func (m *SpotifyMock) RemoveTracks(ctx context.Context, playlistID string, uris 
 	}
 	return m.RemoveTracksFn(ctx, playlistID, uris)
 }
+
+func (m *SpotifyMock) GetUsersTopTracks(ctx context.Context, timeRange string, limit, offset int) (spotify.TopTracksResult, error) {
+	if m.GetUsersTopTracksFn == nil {
+		return spotify.TopTracksResult{}, ErrNotImplemented
+	}
+	return m.GetUsersTopTracksFn(ctx, timeRange, limit, offset)
+}
+
+func (m *SpotifyMock) GetRecentlyPlayed(ctx context.Context, limit int, after, before int64) (spotify.RecentlyPlayedResult, error) {
+	if m.GetRecentlyPlayedFn == nil {
+		return spotify.RecentlyPlayedResult{}, ErrNotImplemented
+	}
+	return m.GetRecentlyPlayedFn(ctx, limit, after, before)
+}

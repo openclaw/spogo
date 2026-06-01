@@ -298,3 +298,17 @@ func (c *AppleScriptClient) RemoveTracks(ctx context.Context, playlistID string,
 	}
 	return ErrUnsupported
 }
+
+func (c *AppleScriptClient) GetUsersTopTracks(ctx context.Context, timeRange string, limit, offset int) (TopTracksResult, error) {
+	if c.fallback != nil {
+		return c.fallback.GetUsersTopTracks(ctx, timeRange, limit, offset)
+	}
+	return TopTracksResult{}, ErrUnsupported
+}
+
+func (c *AppleScriptClient) GetRecentlyPlayed(ctx context.Context, limit int, after, before int64) (RecentlyPlayedResult, error) {
+	if c.fallback != nil {
+		return c.fallback.GetRecentlyPlayed(ctx, limit, after, before)
+	}
+	return RecentlyPlayedResult{}, ErrUnsupported
+}

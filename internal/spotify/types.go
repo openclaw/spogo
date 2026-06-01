@@ -70,3 +70,27 @@ type Queue struct {
 	CurrentlyPlaying *Item  `json:"currently_playing,omitempty"`
 	Queue            []Item `json:"queue"`
 }
+
+type TopTracksResult struct {
+	Total  int    `json:"total"`
+	Limit  int    `json:"limit"`
+	Offset int    `json:"offset"`
+	Items  []Item `json:"items"`
+}
+
+type RecentlyPlayedResult struct {
+	Items   []RecentlyPlayedItem `json:"items"`
+	Cursors *Cursors             `json:"cursors,omitempty"`
+	Next    string               `json:"next,omitempty"`
+	Limit   int                  `json:"limit"`
+}
+
+type RecentlyPlayedItem struct {
+	Track    Item   `json:"track"`
+	PlayedAt string `json:"played_at"`
+}
+
+type Cursors struct {
+	After  string `json:"after"`
+	Before string `json:"before"`
+}

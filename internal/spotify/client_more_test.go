@@ -85,6 +85,59 @@ func TestClientEndpoints(t *testing.T) {
 	mux.HandleFunc("/me/playlists", func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(playlistListResponse{Items: []playlistItem{{ID: "p1", Name: "Playlist"}}, Total: 1})
 	})
+	mux.HandleFunc("/me/top/tracks", func(w http.ResponseWriter, r *http.Request) {
+		if got := r.URL.Query().Get("time_range"); got != "medium_term" {
+			t.Errorf("top tracks time_range = %q, want medium_term", got)
+		}
+		if got := r.URL.Query().Get("limit"); got != "7" {
+			t.Errorf("top tracks limit = %q, want 7", got)
+		}
+		if got := r.URL.Query().Get("offset"); got != "2" {
+			t.Errorf("top tracks offset = %q, want 2", got)
+		}
+		_ = json.NewEncoder(w).Encode(topTracksResponse{
+			Items:  []trackItem{{ID: "t1", URI: "spotify:track:t1", Name: "Track", Album: albumRef{Name: "Album"}, Artists: []artistRef{{Name: "Artist"}}}},
+			Total:  1,
+			Limit:  7,
+			Offset: 2,
+		})
+	})
+	recentlyPlayedCalls := 0
+	mux.HandleFunc("/me/player/recently-played", func(w http.ResponseWriter, r *http.Request) {
+		recentlyPlayedCalls++
+		if got := r.URL.Query().Get("limit"); got != "3" {
+			t.Errorf("recently played limit = %q, want 3", got)
+		}
+		switch recentlyPlayedCalls {
+		case 1:
+			if got := r.URL.Query().Get("after"); got != "1700000000000" {
+				t.Errorf("recently played after = %q, want 1700000000000", got)
+			}
+			if got := r.URL.Query().Get("before"); got != "" {
+				t.Errorf("recently played before = %q, want empty when after is set", got)
+			}
+		case 2:
+			if got := r.URL.Query().Get("after"); got != "" {
+				t.Errorf("recently played after = %q, want empty when before is set", got)
+			}
+			if got := r.URL.Query().Get("before"); got != "1705312800000" {
+				t.Errorf("recently played before = %q, want 1705312800000", got)
+			}
+		default:
+			t.Errorf("unexpected recently-played call %d", recentlyPlayedCalls)
+		}
+		_ = json.NewEncoder(w).Encode(recentlyPlayedResponse{
+			Items: []struct {
+				Track    trackItem `json:"track"`
+				PlayedAt string    `json:"played_at"`
+			}{
+				{Track: trackItem{ID: "t1", URI: "spotify:track:t1", Name: "Track", Album: albumRef{Name: "Album"}, Artists: []artistRef{{Name: "Artist"}}}, PlayedAt: "2024-01-15T10:00:00Z"},
+			},
+			Cursors: &cursorsItem{After: "1705312800001", Before: "1705312799999"},
+			Next:    "https://api.spotify.com/v1/me/player/recently-played?before=1705312799999",
+			Limit:   3,
+		})
+	})
 	mux.HandleFunc("/playlists/p1/tracks", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodDelete || r.Method == http.MethodPost {
 			w.WriteHeader(http.StatusNoContent)
@@ -176,6 +229,23 @@ func TestClientEndpoints(t *testing.T) {
 	}
 	if _, _, err := client.Playlists(context.Background(), 1, 0); err != nil {
 		t.Fatalf("playlists: %v", err)
+	}
+	topTracks, err := client.GetUsersTopTracks(context.Background(), "medium_term", 7, 2)
+	if err != nil {
+		t.Fatalf("top tracks: %v", err)
+	}
+	if topTracks.Total != 1 || topTracks.Limit != 7 || topTracks.Offset != 2 || topTracks.Items[0].Name != "Track" {
+		t.Fatalf("unexpected top tracks result: %+v", topTracks)
+	}
+	recent, err := client.GetRecentlyPlayed(context.Background(), 3, 1700000000000, 0)
+	if err != nil {
+		t.Fatalf("recently played: %v", err)
+	}
+	if recent.Limit != 3 || recent.Cursors == nil || recent.Cursors.Before != "1705312799999" || recent.Items[0].PlayedAt != "2024-01-15T10:00:00Z" {
+		t.Fatalf("unexpected recently played result: %+v", recent)
+	}
+	if _, err := client.GetRecentlyPlayed(context.Background(), 3, 0, 1705312800000); err != nil {
+		t.Fatalf("recently played before: %v", err)
 	}
 	if _, _, err := client.PlaylistTracks(context.Background(), "p1", 1, 0); err != nil {
 		t.Fatalf("playlist tracks: %v", err)

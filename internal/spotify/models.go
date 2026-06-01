@@ -159,3 +159,25 @@ type artistsContainer struct {
 type artistTopTracksResponse struct {
 	Tracks []trackItem `json:"tracks"`
 }
+
+type topTracksResponse struct {
+	Items  []trackItem `json:"items"`
+	Total  int         `json:"total"`
+	Limit  int         `json:"limit"`
+	Offset int         `json:"offset"`
+}
+
+type recentlyPlayedResponse struct {
+	Items []struct {
+		Track    trackItem `json:"track"`
+		PlayedAt string    `json:"played_at"`
+	} `json:"items"`
+	Cursors *cursorsItem `json:"cursors"`
+	Next    string       `json:"next"`
+	Limit   int          `json:"limit"`
+}
+
+type cursorsItem struct {
+	After  string `json:"after"`
+	Before string `json:"before"`
+}

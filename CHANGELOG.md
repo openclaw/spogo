@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.1 - Unreleased
+
+- Add user top tracks and retained listening history commands (`#29`, thanks @hibachipapi)
+
 ## 0.9.0 - 2026-05-10
 
 - Improve Connect playback latency by caching web auth, client tokens, and the active command route between invocations (`#25`, thanks @kk-spartans)

@@ -218,3 +218,15 @@ func (c *fallbackClient) RemoveTracks(ctx context.Context, playlistID string, ur
 		return api.RemoveTracks(ctx, playlistID, uris)
 	})
 }
+
+func (c *fallbackClient) GetUsersTopTracks(ctx context.Context, timeRange string, limit, offset int) (TopTracksResult, error) {
+	return fallbackCall(c, true, func(api API) (TopTracksResult, error) {
+		return api.GetUsersTopTracks(ctx, timeRange, limit, offset)
+	})
+}
+
+func (c *fallbackClient) GetRecentlyPlayed(ctx context.Context, limit int, after, before int64) (RecentlyPlayedResult, error) {
+	return fallbackCall(c, true, func(api API) (RecentlyPlayedResult, error) {
+		return api.GetRecentlyPlayed(ctx, limit, after, before)
+	})
+}

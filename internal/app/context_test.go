@@ -417,3 +417,10 @@ func (dummySpotify) CreatePlaylist(context.Context, string, bool, bool) (spotify
 }
 func (dummySpotify) AddTracks(context.Context, string, []string) error    { return nil }
 func (dummySpotify) RemoveTracks(context.Context, string, []string) error { return nil }
+func (dummySpotify) GetUsersTopTracks(context.Context, string, int, int) (spotify.TopTracksResult, error) {
+	return spotify.TopTracksResult{}, nil
+}
+
+func (dummySpotify) GetRecentlyPlayed(context.Context, int, int64, int64) (spotify.RecentlyPlayedResult, error) {
+	return spotify.RecentlyPlayedResult{}, nil
+}
