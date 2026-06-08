@@ -67,6 +67,29 @@ func TestWriteSkipsNilCookie(t *testing.T) {
 	}
 }
 
+func TestWriteDropsUnmarshalableExpiry(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "cookies.json")
+	input := []*http.Cookie{{
+		Name:    "sp_dc",
+		Value:   "token",
+		Expires: time.Unix(1<<62, 0),
+	}}
+	if err := Write(path, input); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	out, err := Read(path)
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	if len(out) != 1 || out[0].Name != "sp_dc" {
+		t.Fatalf("unexpected cookies: %#v", out)
+	}
+	if !out[0].Expires.IsZero() {
+		t.Fatalf("expected zero expiry, got %v", out[0].Expires)
+	}
+}
+
 func TestReadBadJSON(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "cookies.json")
