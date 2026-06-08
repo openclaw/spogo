@@ -14,7 +14,13 @@ jobs:
           go-version-file: go.mod
       - run: go mod download
       - name: Deadcode
-        run: go run golang.org/x/tools/cmd/deadcode@v0.45.0 -test ./...
+        run: |
+          output_file=$(mktemp)
+          go run golang.org/x/tools/cmd/deadcode@v0.45.0 -test ./... > "$output_file"
+          if [ -s "$output_file" ]; then
+            cat "$output_file"
+            exit 1
+          fi
       - uses: golangci/golangci-lint-action@v7
         with:
           version: v2.7.2
