@@ -38,6 +38,33 @@ func TestConnectClientCommandRouteUsesMemoryAndCache(t *testing.T) {
 	}
 }
 
+func TestConnectCacheStoreNilAndTimeHelpers(t *testing.T) {
+	if store := newConnectCacheStore(""); store != nil {
+		t.Fatalf("expected nil store, got %#v", store)
+	}
+	var store *connectCacheStore
+	if _, err := store.load(); err == nil {
+		t.Fatal("expected nil store load error")
+	}
+	if err := store.update(func(*connectCache) {}); err != nil {
+		t.Fatalf("nil store update: %v", err)
+	}
+
+	now := time.Unix(123, 0)
+	if got := unixOrZero(time.Time{}); got != 0 {
+		t.Fatalf("zero unix = %d", got)
+	}
+	if got := unixOrZero(now); got != 123 {
+		t.Fatalf("unix = %d", got)
+	}
+	if got := timeFromUnix(0); !got.IsZero() {
+		t.Fatalf("expected zero time, got %v", got)
+	}
+	if got := timeFromUnix(123); !got.Equal(now) {
+		t.Fatalf("time = %v, want %v", got, now)
+	}
+}
+
 func TestConnectClientCommandRouteFallsBackToConnectDevice(t *testing.T) {
 	client := &ConnectClient{session: &connectSession{connectDeviceID: "connect-device"}}
 	client.cacheCommandRoute(connectState{activeDeviceID: "active-device"})
@@ -45,6 +72,21 @@ func TestConnectClientCommandRouteFallsBackToConnectDevice(t *testing.T) {
 	from, to, ok := client.commandRoute()
 	if !ok || from != "connect-device" || to != "active-device" {
 		t.Fatalf("route = %q %q %v", from, to, ok)
+	}
+}
+
+func TestConnectClientCommandRouteNoopBranches(t *testing.T) {
+	var nilClient *ConnectClient
+	if from, to, ok := nilClient.commandRoute(); ok || from != "" || to != "" {
+		t.Fatalf("nil route = %q %q %v", from, to, ok)
+	}
+	nilClient.cacheCommandRoute(connectState{activeDeviceID: "ignored"})
+	nilClient.invalidateCommandRoute()
+
+	client := &ConnectClient{session: &connectSession{connectDeviceID: "connect-device"}}
+	client.cacheCommandRoute(connectState{})
+	if _, _, ok := client.commandRoute(); ok {
+		t.Fatal("expected empty route state to miss")
 	}
 }
 
