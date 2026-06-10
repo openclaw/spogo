@@ -34,6 +34,9 @@ func TestWriteReadCookies(t *testing.T) {
 	if len(out) != 1 || out[0].Name != "sp_dc" {
 		t.Fatalf("unexpected cookies: %#v", out)
 	}
+	if !out[0].Expires.Equal(expires) {
+		t.Fatalf("expected expiry %v, got %v", expires, out[0].Expires)
+	}
 }
 
 func TestWriteErrors(t *testing.T) {
@@ -70,11 +73,19 @@ func TestWriteSkipsNilCookie(t *testing.T) {
 func TestWriteDropsUnmarshalableExpiry(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "cookies.json")
-	input := []*http.Cookie{{
-		Name:    "sp_dc",
-		Value:   "token",
-		Expires: time.Unix(1<<62, 0),
-	}}
+	validExpires := time.Date(2030, 1, 2, 3, 4, 5, 0, time.UTC)
+	input := []*http.Cookie{
+		{
+			Name:    "sp_dc",
+			Value:   "token",
+			Expires: time.Unix(1<<62, 0).UTC(),
+		},
+		{
+			Name:    "sp_t",
+			Value:   "token",
+			Expires: validExpires,
+		},
+	}
 	if err := Write(path, input); err != nil {
 		t.Fatalf("write: %v", err)
 	}
@@ -82,11 +93,14 @@ func TestWriteDropsUnmarshalableExpiry(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read: %v", err)
 	}
-	if len(out) != 1 || out[0].Name != "sp_dc" {
+	if len(out) != 2 || out[0].Name != "sp_dc" || out[1].Name != "sp_t" {
 		t.Fatalf("unexpected cookies: %#v", out)
 	}
 	if !out[0].Expires.IsZero() {
 		t.Fatalf("expected zero expiry, got %v", out[0].Expires)
+	}
+	if !out[1].Expires.Equal(validExpires) {
+		t.Fatalf("expected valid expiry %v, got %v", validExpires, out[1].Expires)
 	}
 }
 

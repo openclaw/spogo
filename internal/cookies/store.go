@@ -58,18 +58,12 @@ func Write(path string, cookies []*http.Cookie) error {
 		if c == nil {
 			continue
 		}
-		expires := c.Expires
-		if !expires.IsZero() {
-			if _, err := expires.MarshalJSON(); err != nil {
-				expires = time.Time{}
-			}
-		}
 		stored = append(stored, StoredCookie{
 			Name:     c.Name,
 			Value:    c.Value,
 			Domain:   c.Domain,
 			Path:     c.Path,
-			Expires:  expires,
+			Expires:  jsonSafeExpiry(c.Expires),
 			Secure:   c.Secure,
 			HTTPOnly: c.HttpOnly,
 		})
@@ -79,4 +73,14 @@ func Write(path string, cookies []*http.Cookie) error {
 		return err
 	}
 	return os.WriteFile(path, data, 0o600)
+}
+
+func jsonSafeExpiry(expires time.Time) time.Time {
+	if expires.IsZero() {
+		return time.Time{}
+	}
+	if _, err := expires.MarshalJSON(); err != nil {
+		return time.Time{}
+	}
+	return expires
 }
