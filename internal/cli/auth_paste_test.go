@@ -60,6 +60,37 @@ func TestReadPromptCookieValueRequiredRejectsEmpty(t *testing.T) {
 	}
 }
 
+func TestPromptPastedCookies(t *testing.T) {
+	ctx, _, errOut := testutil.NewTestContext(t, output.FormatPlain)
+	withStdin(t, "sp_dc=token\nsp_key=key\nsp_t=device\n", func() {
+		values, err := promptPastedCookies(ctx.Output)
+		if err != nil {
+			t.Fatalf("prompt: %v", err)
+		}
+		if values.spdc != "token" || values.spkey != "key" || values.spt != "device" {
+			t.Fatalf("unexpected values: %#v", values)
+		}
+	})
+	for _, prompt := range []string{"Paste sp_dc value:", "Paste sp_key value:", "Paste sp_t value:"} {
+		if !strings.Contains(errOut.String(), prompt) {
+			t.Fatalf("expected prompt %q in %q", prompt, errOut.String())
+		}
+	}
+}
+
+func TestPromptPastedCookiesAllowsEmptyOptionalValues(t *testing.T) {
+	ctx, _, _ := testutil.NewTestContext(t, output.FormatPlain)
+	withStdin(t, "sp_dc=token\n\n\n", func() {
+		values, err := promptPastedCookies(ctx.Output)
+		if err != nil {
+			t.Fatalf("prompt: %v", err)
+		}
+		if values.spdc != "token" || values.spkey != "" || values.spt != "" {
+			t.Fatalf("unexpected values: %#v", values)
+		}
+	})
+}
+
 func TestParsePastedCookiesAnyOrder(t *testing.T) {
 	values, err := parsePastedCookies(strings.NewReader("sp_t=device\nsp_dc=token\nsp_key=key\n"))
 	if err != nil {

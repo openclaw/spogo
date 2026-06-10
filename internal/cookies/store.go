@@ -63,7 +63,7 @@ func Write(path string, cookies []*http.Cookie) error {
 			Value:    c.Value,
 			Domain:   c.Domain,
 			Path:     c.Path,
-			Expires:  c.Expires,
+			Expires:  jsonSafeExpiry(c.Expires),
 			Secure:   c.Secure,
 			HTTPOnly: c.HttpOnly,
 		})
@@ -73,4 +73,14 @@ func Write(path string, cookies []*http.Cookie) error {
 		return err
 	}
 	return os.WriteFile(path, data, 0o600)
+}
+
+func jsonSafeExpiry(expires time.Time) time.Time {
+	if expires.IsZero() {
+		return time.Time{}
+	}
+	if _, err := expires.MarshalJSON(); err != nil {
+		return time.Time{}
+	}
+	return expires
 }
