@@ -26,14 +26,16 @@ builds:
       - darwin_arm64
 
 archives:
-  - builds:
+  - ids:
       - spogo
       - spogo_darwin
-    format: tar.gz
+    formats:
+      - tar.gz
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     format_overrides:
       - goos: windows
-        format: zip
+        formats:
+          - zip
 
 checksum:
   name_template: checksums.txt

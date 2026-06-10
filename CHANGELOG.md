@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.9.1 - Unreleased
+## 0.10.0 - 2026-06-10
 
 - Add user top tracks and retained listening history commands (`#29`, thanks @hibachipapi)
 - Fix Firefox cookie imports when browser expiry values cannot be serialized (`#31`, thanks @meoyawn)

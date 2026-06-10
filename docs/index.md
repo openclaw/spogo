@@ -26,7 +26,7 @@ A single Go binary for Spotify on the command line. Search the catalog, drive pl
 
 ## Status
 
-Actively developed. The [CHANGELOG](https://github.com/openclaw/spogo/blob/main/CHANGELOG.md) tracks every shipping release. Current line is `v0.9.x`.
+Actively developed. The [CHANGELOG](https://github.com/openclaw/spogo/blob/main/CHANGELOG.md) tracks every shipping release. Current line is `v0.10.x`.
 
 ## Out of scope
 
