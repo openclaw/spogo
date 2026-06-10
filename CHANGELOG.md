@@ -1,5 +1,7 @@
 # Changelog
 
+## 0.10.1 - Unreleased
+
 ## 0.10.0 - 2026-06-10
 
 - Add user top tracks and retained listening history commands (`#29`, thanks @hibachipapi)
