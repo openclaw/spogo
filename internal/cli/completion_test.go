@@ -24,8 +24,10 @@ func TestWriteCompletionFish(t *testing.T) {
 		"function __spogo_command_tokens",
 		"case '--config' '--profile' '--timeout' '--market' '--language' '--device' '--engine'",
 		"function __spogo_seen_command_path",
+		"function __spogo_at_command_path",
 		"function __spogo_needs_command",
 		"complete -c spogo -f -n '__spogo_needs_command' -a 'auth'",
+		"-n '__spogo_at_command_path \\'playlist\\'' -a 'tracks'",
 		"-n '__spogo_seen_command_path \\'playlist\\' \\'tracks\\'' -l limit",
 		"-n '__spogo_seen_command_path \\'library\\' \\'tracks\\' \\'list\\'' -l limit",
 		"-n '__spogo_seen_command_path \\'completion\\'' -a 'fish'",
@@ -36,6 +38,9 @@ func TestWriteCompletionFish(t *testing.T) {
 	}
 	if strings.Contains(got, "__fish_use_subcommand") {
 		t.Fatalf("completion output uses unfiltered root condition:\n%s", got)
+	}
+	if strings.Contains(got, "-f -n '__spogo_seen_command_path \\'playlist\\'' -a 'tracks'") {
+		t.Fatalf("completion output uses prefix condition for child command:\n%s", got)
 	}
 }
 
@@ -63,6 +68,12 @@ func TestCompletionHelpers(t *testing.T) {
 	}
 	if got := commandPathCondition([]string{"playlist", "tracks"}); got != "__spogo_seen_command_path 'playlist' 'tracks'" {
 		t.Fatalf("commandPathCondition got %q", got)
+	}
+	if got := commandChildrenCondition(nil); got != "" {
+		t.Fatalf("empty commandChildrenCondition got %q", got)
+	}
+	if got := commandChildrenCondition([]string{"playlist"}); got != "__spogo_at_command_path 'playlist'" {
+		t.Fatalf("commandChildrenCondition got %q", got)
 	}
 	if got := enumValues(nil); got != nil {
 		t.Fatalf("nil enumValues got %#v", got)

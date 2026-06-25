@@ -64,6 +64,15 @@ function __spogo_seen_command_path
     return 0
 end
 
+function __spogo_at_command_path
+    set -l tokens (__spogo_command_tokens)
+    set -l path $argv
+    if test (count $tokens) -ne (count $path)
+        return 1
+    end
+    __spogo_seen_command_path $path
+end
+
 function __spogo_needs_command
     test (count (__spogo_command_tokens)) -eq 0
 end
@@ -79,7 +88,7 @@ func writeFishCommands(w io.Writer, node *kong.Node, path []string) error {
 		return nil
 	}
 
-	condition := commandPathCondition(path)
+	condition := commandChildrenCondition(path)
 	if node.Type == kong.ApplicationNode {
 		condition = "__spogo_needs_command"
 	}
@@ -189,6 +198,13 @@ func commandPathCondition(path []string) string {
 		return ""
 	}
 	return "__spogo_seen_command_path " + fishWords(strings.Join(path, " "))
+}
+
+func commandChildrenCondition(path []string) string {
+	if len(path) == 0 {
+		return ""
+	}
+	return "__spogo_at_command_path " + fishWords(strings.Join(path, " "))
 }
 
 func enumValues(value *kong.Value) []string {
