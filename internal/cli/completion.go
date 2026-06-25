@@ -63,6 +63,10 @@ function __spogo_seen_command_path
     end
     return 0
 end
+
+function __spogo_needs_command
+    test (count (__spogo_command_tokens)) -eq 0
+end
 `); err != nil {
 		return err
 	}
@@ -77,7 +81,7 @@ func writeFishCommands(w io.Writer, node *kong.Node, path []string) error {
 
 	condition := commandPathCondition(path)
 	if node.Type == kong.ApplicationNode {
-		condition = "__fish_use_subcommand"
+		condition = "__spogo_needs_command"
 	}
 	for _, child := range node.Children {
 		if child.Hidden {

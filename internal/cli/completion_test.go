@@ -24,7 +24,8 @@ func TestWriteCompletionFish(t *testing.T) {
 		"function __spogo_command_tokens",
 		"case '--config' '--profile' '--timeout' '--market' '--language' '--device' '--engine'",
 		"function __spogo_seen_command_path",
-		"complete -c spogo -f -n '__fish_use_subcommand' -a 'auth'",
+		"function __spogo_needs_command",
+		"complete -c spogo -f -n '__spogo_needs_command' -a 'auth'",
 		"-n '__spogo_seen_command_path \\'playlist\\' \\'tracks\\'' -l limit",
 		"-n '__spogo_seen_command_path \\'library\\' \\'tracks\\' \\'list\\'' -l limit",
 		"-n '__spogo_seen_command_path \\'completion\\'' -a 'fish'",
@@ -32,6 +33,9 @@ func TestWriteCompletionFish(t *testing.T) {
 		if !strings.Contains(got, want) {
 			t.Fatalf("completion output missing %q:\n%s", want, got)
 		}
+	}
+	if strings.Contains(got, "__fish_use_subcommand") {
+		t.Fatalf("completion output uses unfiltered root condition:\n%s", got)
 	}
 }
 
