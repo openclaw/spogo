@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/steipete/spogo/internal/cookies"
@@ -60,6 +61,60 @@ func TestRunInvalidProfile(t *testing.T) {
 	code := run([]string{"--market", "USA", "queue", "clear"}, out, errOut)
 	if code != 2 {
 		t.Fatalf("expected 2, got %d", code)
+	}
+}
+
+func TestRunCompletionFish(t *testing.T) {
+	out := &bytes.Buffer{}
+	errOut := &bytes.Buffer{}
+	code := run([]string{"completion", "fish"}, out, errOut)
+	if code != 0 {
+		t.Fatalf("expected 0, got %d; out=%q err=%q", code, out.String(), errOut.String())
+	}
+	got := out.String()
+	for _, want := range []string{
+		"# fish completion for spogo",
+		"complete -c spogo",
+		"function __spogo_seen_command_path",
+		"-a 'completion'",
+		"-l config",
+		"-a 'fish'",
+		"-n '__spogo_seen_command_path \\'playlist\\' \\'tracks\\'' -l limit",
+		"-n '__spogo_seen_command_path \\'library\\' \\'tracks\\' \\'list\\'' -l limit",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("completion output missing %q:\n%s", want, got)
+		}
+	}
+	if strings.Contains(got, "__fish_seen_subcommand_from \\'playlist\\'") {
+		t.Fatalf("completion output uses leaf-only playlist condition:\n%s", got)
+	}
+}
+
+func TestRunCompletionBypassesProfileAndConfigValidation(t *testing.T) {
+	out := &bytes.Buffer{}
+	errOut := &bytes.Buffer{}
+	path := filepath.Join(t.TempDir(), "bad.toml")
+	if err := os.WriteFile(path, []byte("not=toml=\""), 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	code := run([]string{"--config", path, "--market", "USA", "completion", "fish"}, out, errOut)
+	if code != 0 {
+		t.Fatalf("expected 0, got %d; out=%q err=%q", code, out.String(), errOut.String())
+	}
+}
+
+func TestRunCompletionUsageErrors(t *testing.T) {
+	for _, args := range [][]string{
+		{"completion"},
+		{"completion", "bash"},
+	} {
+		out := &bytes.Buffer{}
+		errOut := &bytes.Buffer{}
+		code := run(args, out, errOut)
+		if code != 2 {
+			t.Fatalf("run(%v): expected 2, got %d; out=%q err=%q", args, code, out.String(), errOut.String())
+		}
 	}
 }
 

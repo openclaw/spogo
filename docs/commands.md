@@ -39,6 +39,14 @@ Env overrides: every global flag has a `SPOGO_<NAME>` env equivalent. Two extras
 | `SPOGO_TOTP_SECRET_URL` | Override TOTP secret source (`http(s)` or `file://`). |
 | `SPOGO_CONNECT_VERSION` | Override Connect client version sent to playback endpoints. |
 
+## completion
+
+Print shell completion scripts. This command does not read Spotify auth or profile configuration.
+
+| Command | Purpose |
+| --- | --- |
+| `spogo completion fish` | Print fish shell completions. |
+
 ## auth
 
 Cookie management. See [Auth](auth.md).

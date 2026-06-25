@@ -34,6 +34,12 @@ spogo [global flags] <command> [args]
 
 ## Commands
 
+### completion
+
+- `spogo completion fish`
+  - prints fish shell completions to stdout
+  - does not load Spotify auth, cookies, or profile configuration
+
 ### auth
 
 - `spogo auth status`
