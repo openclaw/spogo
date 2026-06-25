@@ -26,11 +26,32 @@ func writeFishCompletion(w io.Writer, parser *kong.Kong) error {
 	if _, err := fmt.Fprintln(w, "complete -c spogo -f"); err != nil {
 		return err
 	}
-	if _, err := fmt.Fprintln(w, `function __spogo_seen_command_path
+	if _, err := io.WriteString(w, `function __spogo_command_tokens
     set -l tokens (commandline -opc)
     if test (count $tokens) -gt 0; and test "$tokens[1]" = spogo
         set -e tokens[1]
     end
+    set -l skip_next 0
+    for token in $tokens
+        if test $skip_next -eq 1
+            set skip_next 0
+            continue
+        end
+        switch $token
+            case '--config' '--profile' '--timeout' '--market' '--language' '--device' '--engine'
+                set skip_next 1
+            case '--config=*' '--profile=*' '--timeout=*' '--market=*' '--language=*' '--device=*' '--engine=*'
+                continue
+            case '-*'
+                continue
+            case '*'
+                printf '%s\n' $token
+        end
+    end
+end
+
+function __spogo_seen_command_path
+    set -l tokens (__spogo_command_tokens)
     set -l path $argv
     if test (count $tokens) -lt (count $path)
         return 1
@@ -41,7 +62,8 @@ func writeFishCompletion(w io.Writer, parser *kong.Kong) error {
         end
     end
     return 0
-end`); err != nil {
+end
+`); err != nil {
 		return err
 	}
 
