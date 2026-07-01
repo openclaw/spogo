@@ -8,7 +8,7 @@ import (
 )
 
 type CompletionCmd struct {
-	Shell string `arg:"" enum:"bash,zsh,fish" help:"Shell to generate completions for."`
+	Shell string `arg:"" enum:"bash,zsh,fish" help:"Shell to generate completions for (bash, zsh, or fish)."`
 }
 
 // RegisterCompletion handles completion requests before normal argument parsing
