@@ -34,6 +34,10 @@ func run(args []string, out io.Writer, errOut io.Writer) int {
 		_, _ = fmt.Fprintln(errOut, err)
 		return 2
 	}
+	cli.RegisterCompletion(parser)
+	if exitCode >= 0 {
+		return exitCode
+	}
 	args = normalizeArgs(args)
 	kctx, err := parser.Parse(args)
 	if exitCode >= 0 {
@@ -42,6 +46,13 @@ func run(args []string, out io.Writer, errOut io.Writer) int {
 	if err != nil {
 		_, _ = fmt.Fprintln(errOut, err)
 		return 2
+	}
+	if command.Completion.Shell != "" {
+		if err := cli.WriteCompletion(kctx, command.Completion.Shell); err != nil {
+			_, _ = fmt.Fprintln(errOut, err)
+			return 2
+		}
+		return 0
 	}
 	settings, err := command.Globals.Settings()
 	if err != nil {

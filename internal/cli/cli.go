@@ -19,14 +19,15 @@ func New() *CLI {
 type CLI struct {
 	Globals Globals `kong:"embed"`
 
-	Auth     AuthCmd     `kong:"cmd,help='Authentication and cookies.'"`
-	Search   SearchCmd   `kong:"cmd,help='Search Spotify.'"`
-	Track    TrackCmd    `kong:"cmd,help='Track operations.'"`
-	Album    AlbumCmd    `kong:"cmd,help='Album operations.'"`
-	Artist   ArtistCmd   `kong:"cmd,help='Artist operations.'"`
-	Playlist PlaylistCmd `kong:"cmd,help='Playlist operations.'"`
-	Show     ShowCmd     `kong:"cmd,help='Show operations.'"`
-	Episode  EpisodeCmd  `kong:"cmd,help='Episode operations.'"`
+	Auth       AuthCmd       `kong:"cmd,help='Authentication and cookies.'"`
+	Completion CompletionCmd `kong:"cmd,help='Generate shell completions.'"`
+	Search     SearchCmd     `kong:"cmd,help='Search Spotify.'"`
+	Track      TrackCmd      `kong:"cmd,help='Track operations.'"`
+	Album      AlbumCmd      `kong:"cmd,help='Album operations.'"`
+	Artist     ArtistCmd     `kong:"cmd,help='Artist operations.'"`
+	Playlist   PlaylistCmd   `kong:"cmd,help='Playlist operations.'"`
+	Show       ShowCmd       `kong:"cmd,help='Show operations.'"`
+	Episode    EpisodeCmd    `kong:"cmd,help='Episode operations.'"`
 
 	Play    PlayCmd    `kong:"cmd,help='Start playback.'"`
 	Pause   PauseCmd   `kong:"cmd,help='Pause playback.'"`
