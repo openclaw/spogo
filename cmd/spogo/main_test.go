@@ -136,6 +136,18 @@ func TestRunCompletionUsageErrors(t *testing.T) {
 	}
 }
 
+func TestRunCompletionHelpListsSupportedShells(t *testing.T) {
+	out := &bytes.Buffer{}
+	errOut := &bytes.Buffer{}
+	code := run([]string{"completion", "--help"}, out, errOut)
+	if code != 0 {
+		t.Fatalf("expected 0, got %d; out=%q err=%q", code, out.String(), errOut.String())
+	}
+	if !strings.Contains(out.String(), "bash, zsh, or fish") {
+		t.Fatalf("completion help does not list supported shells:\n%s", out.String())
+	}
+}
+
 func TestRunCommandError(t *testing.T) {
 	out := &bytes.Buffer{}
 	errOut := &bytes.Buffer{}

@@ -2,6 +2,8 @@
 
 ## 0.10.1 - Unreleased
 
+- Add Bash, Zsh, and Fish shell completions and show supported shells in command help (`#32`, thanks @kk-spartans)
+
 ## 0.10.0 - 2026-06-10
 
 - Add user top tracks and retained listening history commands (`#29`, thanks @hibachipapi)
