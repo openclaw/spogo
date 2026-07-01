@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/steipete/spogo/internal/cookies"
+	"github.com/steipete/sweetcookie"
 )
 
 func TestRunHelp(t *testing.T) {
@@ -173,6 +175,21 @@ func TestRunAuthStatus(t *testing.T) {
 	code := run([]string{"--config", configPath, "auth", "status"}, out, errOut)
 	if code != 0 {
 		t.Fatalf("expected 0, got %d; out=%q err=%q", code, out.String(), errOut.String())
+	}
+}
+
+func TestRunAuthStatusWithoutCookiesReturnsAuthExitCode(t *testing.T) {
+	restore := cookies.SetReadCookies(func(context.Context, sweetcookie.Options) (sweetcookie.Result, error) {
+		return sweetcookie.Result{}, nil
+	})
+	defer restore()
+
+	out := &bytes.Buffer{}
+	errOut := &bytes.Buffer{}
+	configPath := filepath.Join(t.TempDir(), "config.toml")
+	code := run([]string{"--config", configPath, "--no-input", "auth", "status"}, out, errOut)
+	if code != 3 {
+		t.Fatalf("expected 3, got %d; out=%q err=%q", code, out.String(), errOut.String())
 	}
 }
 

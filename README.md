@@ -4,6 +4,8 @@
 
  Power CLI using web cookies. Search, control playback, manage library/playlists, and script with JSON/plain output.
 
+Product direction and compatibility policy: [VISION.md](VISION.md).
+
 ## Features
 
 - Search tracks, albums, artists, playlists, shows, episodes

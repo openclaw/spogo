@@ -17,6 +17,9 @@ var readCookies = sweetcookie.Get
 
 var authCookieNames = []string{"sp_dc", "sp_key", "sp_t"}
 
+// ErrNoCookies reports that all configured browser cookie sources were empty.
+var ErrNoCookies = errors.New("no cookies found")
+
 // SetReadCookies overrides the internal cookie reader and returns a restore func.
 // Intended for tests.
 func SetReadCookies(fn func(context.Context, sweetcookie.Options) (sweetcookie.Result, error)) func() {
@@ -148,9 +151,9 @@ func normalizeCookieHost(host string) string {
 func browserCookiesNotFoundError(warnings []string) error {
 	warnings = compactWarnings(warnings)
 	if len(warnings) == 0 {
-		return errors.New("no cookies found")
+		return ErrNoCookies
 	}
-	return fmt.Errorf("no cookies found; %s", strings.Join(warnings, "; "))
+	return fmt.Errorf("%w; %s", ErrNoCookies, strings.Join(warnings, "; "))
 }
 
 func compactWarnings(warnings []string) []string {
