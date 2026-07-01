@@ -63,8 +63,8 @@ func TestBrowserSourceNoCookies(t *testing.T) {
 	})
 	defer restore()
 	src := BrowserSource{Domain: "spotify.com"}
-	if _, err := src.Cookies(context.Background()); err == nil {
-		t.Fatalf("expected error")
+	if _, err := src.Cookies(context.Background()); !errors.Is(err, ErrNoCookies) {
+		t.Fatalf("expected ErrNoCookies, got %v", err)
 	}
 }
 
@@ -150,6 +150,9 @@ func TestBrowserSourceNoCookiesIncludesWarnings(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "chrome cookie store not found") {
 		t.Fatalf("expected warning in error, got %v", err)
+	}
+	if !errors.Is(err, ErrNoCookies) {
+		t.Fatalf("expected ErrNoCookies, got %v", err)
 	}
 }
 

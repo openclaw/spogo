@@ -6,6 +6,7 @@ import (
 	"net"
 
 	"github.com/alecthomas/kong"
+	"github.com/steipete/spogo/internal/cookies"
 	"github.com/steipete/spogo/internal/spotify"
 )
 
@@ -45,6 +46,9 @@ func ExitCode(err error) int {
 	var parseErr *kong.ParseError
 	if errors.As(err, &parseErr) {
 		return 2
+	}
+	if errors.Is(err, cookies.ErrNoCookies) {
+		return 3
 	}
 	var apiErr spotify.APIError
 	if errors.As(err, &apiErr) {

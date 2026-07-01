@@ -5,6 +5,7 @@ import (
 	"net"
 	"testing"
 
+	"github.com/steipete/spogo/internal/cookies"
 	"github.com/steipete/spogo/internal/spotify"
 )
 
@@ -43,6 +44,9 @@ func TestExitCode(t *testing.T) {
 		t.Fatalf("expected 5")
 	}
 	if ExitCode(spotify.APIError{Status: 401}) != 3 {
+		t.Fatalf("expected 3")
+	}
+	if ExitCode(cookies.ErrNoCookies) != 3 {
 		t.Fatalf("expected 3")
 	}
 	if ExitCode(spotify.APIError{Status: 500}) != 1 {
