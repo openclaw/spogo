@@ -45,10 +45,6 @@ type CLI struct {
 	User    UserCmd    `kong:"cmd,help='User listening data.'"`
 }
 
-type CompletionCmd struct {
-	Shell string `arg:"" enum:"fish" help:"Shell to generate completions for."`
-}
-
 type Globals struct {
 	Config   string           `help:"Config file path." env:"SPOGO_CONFIG"`
 	Profile  string           `help:"Profile name." env:"SPOGO_PROFILE"`

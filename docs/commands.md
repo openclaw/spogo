@@ -45,7 +45,25 @@ Print shell completion scripts. This command does not read Spotify auth or profi
 
 | Command | Purpose |
 | --- | --- |
+| `spogo completion bash` | Print Bash shell initialization. |
+| `spogo completion zsh` | Print Zsh shell initialization. |
 | `spogo completion fish` | Print fish shell completions. |
+
+Load completions for the current session:
+
+```bash
+# Bash
+source <(spogo completion bash)
+
+# Zsh
+source <(spogo completion zsh)
+
+# fish
+spogo completion fish | source
+```
+
+To enable them permanently, add the appropriate command to `~/.bashrc`, `~/.zshrc`, or
+`~/.config/fish/config.fish`.
 
 ## auth
 

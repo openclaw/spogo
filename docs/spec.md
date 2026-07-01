@@ -36,8 +36,10 @@ spogo [global flags] <command> [args]
 
 ### completion
 
-- `spogo completion fish`
-  - prints fish shell completions to stdout
+- `spogo completion <shell>`
+  - supports `bash`, `zsh`, and `fish`
+  - prints shell initialization code to stdout
+  - derives commands, flags, and argument values from the CLI model
   - does not load Spotify auth, cookies, or profile configuration
 
 ### auth

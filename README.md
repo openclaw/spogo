@@ -80,7 +80,7 @@ Env overrides:
 
 Commands:
 
-- `completion fish`
+- `completion bash|zsh|fish`
 - `auth status|import|paste|clear`
 - `search track|album|artist|playlist|show|episode`
 - `track info`, `album info`, `artist info`, `playlist info`, `show info`, `episode info`

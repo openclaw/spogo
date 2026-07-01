@@ -64,30 +64,27 @@ func TestRunInvalidProfile(t *testing.T) {
 	}
 }
 
-func TestRunCompletionFish(t *testing.T) {
-	out := &bytes.Buffer{}
-	errOut := &bytes.Buffer{}
-	code := run([]string{"completion", "fish"}, out, errOut)
-	if code != 0 {
-		t.Fatalf("expected 0, got %d; out=%q err=%q", code, out.String(), errOut.String())
+func TestRunCompletionScripts(t *testing.T) {
+	tests := []struct {
+		shell string
+		want  string
+	}{
+		{shell: "bash", want: "complete -o default -o bashdefault"},
+		{shell: "zsh", want: "#compdef spogo"},
+		{shell: "fish", want: "complete -f -c spogo"},
 	}
-	got := out.String()
-	for _, want := range []string{
-		"# fish completion for spogo",
-		"complete -c spogo",
-		"function __spogo_seen_command_path",
-		"-a 'completion'",
-		"-l config",
-		"-a 'fish'",
-		"-n '__spogo_seen_command_path \\'playlist\\' \\'tracks\\'' -l limit",
-		"-n '__spogo_seen_command_path \\'library\\' \\'tracks\\' \\'list\\'' -l limit",
-	} {
-		if !strings.Contains(got, want) {
-			t.Fatalf("completion output missing %q:\n%s", want, got)
-		}
-	}
-	if strings.Contains(got, "__fish_seen_subcommand_from \\'playlist\\'") {
-		t.Fatalf("completion output uses leaf-only playlist condition:\n%s", got)
+	for _, tt := range tests {
+		t.Run(tt.shell, func(t *testing.T) {
+			out := &bytes.Buffer{}
+			errOut := &bytes.Buffer{}
+			code := run([]string{"completion", tt.shell}, out, errOut)
+			if code != 0 {
+				t.Fatalf("expected 0, got %d; out=%q err=%q", code, out.String(), errOut.String())
+			}
+			if !strings.Contains(out.String(), tt.want) {
+				t.Fatalf("completion output missing %q:\n%s", tt.want, out.String())
+			}
+		})
 	}
 }
 
@@ -98,16 +95,37 @@ func TestRunCompletionBypassesProfileAndConfigValidation(t *testing.T) {
 	if err := os.WriteFile(path, []byte("not=toml=\""), 0o644); err != nil {
 		t.Fatalf("write: %v", err)
 	}
-	code := run([]string{"--config", path, "--market", "USA", "completion", "fish"}, out, errOut)
+	for _, shell := range []string{"bash", "zsh", "fish"} {
+		out.Reset()
+		errOut.Reset()
+		code := run([]string{"--config", path, "--market", "USA", "completion", shell}, out, errOut)
+		if code != 0 {
+			t.Fatalf("%s: expected 0, got %d; out=%q err=%q", shell, code, out.String(), errOut.String())
+		}
+	}
+}
+
+func TestRunCompletionRequestBypassesNormalExecution(t *testing.T) {
+	t.Setenv("COMP_LINE", "spogo playlist ")
+	t.Setenv("COMP_POINT", "15")
+
+	out := &bytes.Buffer{}
+	errOut := &bytes.Buffer{}
+	code := run([]string{"--market", "USA", "queue", "clear"}, out, errOut)
 	if code != 0 {
 		t.Fatalf("expected 0, got %d; out=%q err=%q", code, out.String(), errOut.String())
+	}
+	for _, want := range []string{"tracks\n", "create\n", "remove\n"} {
+		if !strings.Contains(out.String(), want) {
+			t.Errorf("completion predictions missing %q:\n%s", want, out.String())
+		}
 	}
 }
 
 func TestRunCompletionUsageErrors(t *testing.T) {
 	for _, args := range [][]string{
 		{"completion"},
-		{"completion", "bash"},
+		{"completion", "powershell"},
 	} {
 		out := &bytes.Buffer{}
 		errOut := &bytes.Buffer{}

@@ -8,74 +8,80 @@ import (
 	"github.com/alecthomas/kong"
 )
 
-func TestWriteCompletionFish(t *testing.T) {
-	parser, err := kong.New(New(), kong.Name("spogo"), kong.Vars(VersionVars()))
+func TestWriteCompletion(t *testing.T) {
+	tests := []struct {
+		shell string
+		want  []string
+	}{
+		{
+			shell: "bash",
+			want:  []string{"complete", "-C", "spogo"},
+		},
+		{
+			shell: "zsh",
+			want:  []string{"#compdef spogo", "bashcompinit", "complete", "-C", "spogo"},
+		},
+		{
+			shell: "fish",
+			want:  []string{"function __complete_spogo", "COMP_LINE", "complete -f -c spogo"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.shell, func(t *testing.T) {
+			out := &bytes.Buffer{}
+			exitCode := -1
+			parser, err := kong.New(New(),
+				kong.Name("spogo"),
+				kong.Writers(out, &bytes.Buffer{}),
+				kong.Vars(VersionVars()),
+				kong.Exit(func(code int) { exitCode = code }),
+			)
+			if err != nil {
+				t.Fatalf("parser: %v", err)
+			}
+			ctx, err := parser.Parse([]string{"completion", tt.shell})
+			if err != nil {
+				t.Fatalf("parse: %v", err)
+			}
+			if err := WriteCompletion(ctx, tt.shell); err != nil {
+				t.Fatalf("completion: %v", err)
+			}
+			if exitCode != 0 {
+				t.Fatalf("exit code: got %d, want 0", exitCode)
+			}
+			for _, want := range tt.want {
+				if !strings.Contains(out.String(), want) {
+					t.Errorf("completion output missing %q:\n%s", want, out.String())
+				}
+			}
+		})
+	}
+}
+
+func TestRegisterCompletionPredictsFromKongModel(t *testing.T) {
+	t.Setenv("COMP_LINE", "spogo playlist ")
+	t.Setenv("COMP_POINT", "15")
+
+	out := &bytes.Buffer{}
+	exitCode := -1
+	parser, err := kong.New(New(),
+		kong.Name("spogo"),
+		kong.Writers(out, &bytes.Buffer{}),
+		kong.Vars(VersionVars()),
+		kong.Exit(func(code int) { exitCode = code }),
+	)
 	if err != nil {
 		t.Fatalf("parser: %v", err)
 	}
 
-	out := &bytes.Buffer{}
-	if err := WriteCompletion(out, parser, "fish"); err != nil {
-		t.Fatalf("completion: %v", err)
+	RegisterCompletion(parser)
+	if exitCode != 0 {
+		t.Fatalf("exit code: got %d, want 0", exitCode)
 	}
-	got := out.String()
-	for _, want := range []string{
-		"# fish completion for spogo",
-		"function __spogo_command_tokens",
-		"case '--config' '--profile' '--timeout' '--market' '--language' '--device' '--engine'",
-		"function __spogo_seen_command_path",
-		"function __spogo_at_command_path",
-		"function __spogo_needs_command",
-		"complete -c spogo -f -n '__spogo_needs_command' -a 'auth'",
-		"-n '__spogo_at_command_path \\'playlist\\'' -a 'tracks'",
-		"-n '__spogo_seen_command_path \\'playlist\\' \\'tracks\\'' -l limit",
-		"-n '__spogo_seen_command_path \\'library\\' \\'tracks\\' \\'list\\'' -l limit",
-		"-n '__spogo_seen_command_path \\'completion\\'' -a 'fish'",
-	} {
-		if !strings.Contains(got, want) {
-			t.Fatalf("completion output missing %q:\n%s", want, got)
+	for _, want := range []string{"tracks", "create", "remove"} {
+		if !strings.Contains(out.String(), want+"\n") {
+			t.Errorf("completion predictions missing %q:\n%s", want, out.String())
 		}
-	}
-	if strings.Contains(got, "__fish_use_subcommand") {
-		t.Fatalf("completion output uses unfiltered root condition:\n%s", got)
-	}
-	if strings.Contains(got, "-f -n '__spogo_seen_command_path \\'playlist\\'' -a 'tracks'") {
-		t.Fatalf("completion output uses prefix condition for child command:\n%s", got)
-	}
-}
-
-func TestWriteCompletionErrors(t *testing.T) {
-	if err := WriteCompletion(&bytes.Buffer{}, nil, "fish"); err == nil {
-		t.Fatalf("expected nil parser error")
-	}
-	if err := WriteCompletion(&bytes.Buffer{}, &kong.Kong{}, "bash"); err == nil {
-		t.Fatalf("expected unsupported shell error")
-	}
-}
-
-func TestCompletionHelpers(t *testing.T) {
-	if got := fishQuote("won't"); got != "'won\\'t'" {
-		t.Fatalf("fishQuote got %q", got)
-	}
-	if got := fishWords("playlist tracks"); got != "'playlist' 'tracks'" {
-		t.Fatalf("fishWords got %q", got)
-	}
-	if got := fishWords(""); got != "" {
-		t.Fatalf("empty fishWords got %q", got)
-	}
-	if got := commandPathCondition(nil); got != "" {
-		t.Fatalf("empty commandPathCondition got %q", got)
-	}
-	if got := commandPathCondition([]string{"playlist", "tracks"}); got != "__spogo_seen_command_path 'playlist' 'tracks'" {
-		t.Fatalf("commandPathCondition got %q", got)
-	}
-	if got := commandChildrenCondition(nil); got != "" {
-		t.Fatalf("empty commandChildrenCondition got %q", got)
-	}
-	if got := commandChildrenCondition([]string{"playlist"}); got != "__spogo_at_command_path 'playlist'" {
-		t.Fatalf("commandChildrenCondition got %q", got)
-	}
-	if got := enumValues(nil); got != nil {
-		t.Fatalf("nil enumValues got %#v", got)
 	}
 }
