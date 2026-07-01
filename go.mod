@@ -1,6 +1,6 @@
 module github.com/steipete/spogo
 
-go 1.25.0
+go 1.25.11
 
 require (
 	github.com/alecthomas/kong v1.15.0
