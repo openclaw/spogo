@@ -21,7 +21,7 @@ That's it — the formula pulls a signed binary from the latest GitHub release.
 go install github.com/steipete/spogo/cmd/spogo@latest
 ```
 
-Builds from source against your local Go toolchain. Requires Go 1.22+.
+Builds from source against your local Go toolchain. Requires Go 1.25.11+.
 
 ## Pre-built release binaries
 
