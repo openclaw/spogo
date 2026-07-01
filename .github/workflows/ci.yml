@@ -16,12 +16,12 @@ jobs:
       - name: Deadcode
         run: |
           output_file=$(mktemp)
-          go run golang.org/x/tools/cmd/deadcode@v0.45.0 -test ./... > "$output_file"
+          go run golang.org/x/tools/cmd/deadcode@v0.47.0 -test ./... > "$output_file"
           if [ -s "$output_file" ]; then
             cat "$output_file"
             exit 1
           fi
       - uses: golangci/golangci-lint-action@v9
         with:
-          version: v2.7.2
+          version: v2.12.2
       - run: ./scripts/check-coverage.sh 90
