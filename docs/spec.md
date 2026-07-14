@@ -80,7 +80,7 @@ spogo [global flags] <command> [args]
 
 - `spogo play [<id|url> ...]` (track/album/playlist/show)
   - optional: `--type <track|album|playlist|show|episode>` for raw IDs
-  - optional: `--shuffle` enable shuffle before playing (randomizes first track for context URIs)
+  - optional: `--shuffle` enable shuffle before playing (randomizes first track for context URIs and ordered track lists)
   - artist URIs play top tracks (starts with the first)
   - two or more track URIs start an ordered track list in one request (plays the first, then continues through the rest, without creating a playlist); tracks only — contexts and artists are rejected in this mode. Raw IDs require `--type track`. This is not a queue append; the list replaces the current playback context.
 - `spogo pause`
