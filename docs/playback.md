@@ -10,7 +10,7 @@ All playback commands act on the currently active Spotify Connect device unless 
 ## play
 
 ```bash
-spogo play [<id|url>] [--type <track|album|playlist|show|episode>] [--shuffle]
+spogo play [<id|url> ...] [--type <track|album|playlist|show|episode>] [--shuffle]
 ```
 
 Accepts:
@@ -18,6 +18,7 @@ Accepts:
 - A Spotify URI: `spotify:track:7hQJA50XrCWABAu5v6QZ4i`, `spotify:album:...`, `spotify:playlist:...`, `spotify:show:...`, `spotify:episode:...`, `spotify:artist:...`.
 - A web URL: `https://open.spotify.com/track/7hQJA50XrCWABAu5v6QZ4i`.
 - A bare ID — combine with `--type` to disambiguate.
+- Two or more track URIs/IDs — starts an ordered track list (see below).
 - No argument — resumes the current item.
 
 Behavior:
@@ -25,7 +26,8 @@ Behavior:
 - **Tracks** start immediately.
 - **Albums / playlists / shows** start a context — `spogo next` walks through items.
 - **Artists** start with the artist's top tracks (first track first).
-- `--shuffle` enables shuffle on the device before play, randomizing the first track for context URIs.
+- **Multiple tracks** — passing two or more track URIs starts an ordered list in a single request: Spotify plays the first, then continues through the rest, without creating a playlist. This mode is tracks-only; albums, playlists, shows, episodes, and artists are rejected. With raw IDs, pass `--type track`. This is not a queue append — the list replaces the current playback context (use [`spogo queue add`](queue.md) to append a single item instead).
+- `--shuffle` enables shuffle on the device before play, randomizing the first track for context URIs and for an ordered track list.
 
 Examples:
 
@@ -36,6 +38,8 @@ spogo play https://open.spotify.com/album/4aawyAB9vmqN3uQ7FjRGTy
 spogo play 37i9dQZF1DXcBWIGoYBM5M --type playlist               # bare ID
 spogo play spotify:playlist:37i9dQZF1DXcBWIGoYBM5M --shuffle    # shuffle on
 spogo play spotify:artist:6sFIWsNpZYqfjUpaCgueju                # top tracks
+spogo play spotify:track:7hQJA50XrCWABAu5v6QZ4i spotify:track:1301WleyT98MSxVHPZCA6M  # ordered list
+spogo play 7hQJA50XrCWABAu5v6QZ4i 1301WleyT98MSxVHPZCA6M --type track                 # ordered list, raw IDs
 ```
 
 ## pause / resume

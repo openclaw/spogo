@@ -12,6 +12,7 @@ type API interface {
 	GetEpisode(ctx context.Context, id string) (Item, error)
 	Playback(ctx context.Context) (PlaybackStatus, error)
 	Play(ctx context.Context, uri string) error
+	PlayTracks(ctx context.Context, uris []string) error
 	Pause(ctx context.Context) error
 	Next(ctx context.Context) error
 	Previous(ctx context.Context) error

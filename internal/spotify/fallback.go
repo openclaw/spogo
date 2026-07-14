@@ -109,6 +109,12 @@ func (c *fallbackClient) Play(ctx context.Context, uri string) error {
 	})
 }
 
+func (c *fallbackClient) PlayTracks(ctx context.Context, uris []string) error {
+	return fallbackVoid(c, true, func(api API) error {
+		return api.PlayTracks(ctx, uris)
+	})
+}
+
 func (c *fallbackClient) Pause(ctx context.Context) error {
 	return fallbackVoid(c, true, func(api API) error {
 		return api.Pause(ctx)

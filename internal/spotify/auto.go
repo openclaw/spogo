@@ -122,6 +122,12 @@ func (c *autoClient) Play(ctx context.Context, uri string) error {
 	})
 }
 
+func (c *autoClient) PlayTracks(ctx context.Context, uris []string) error {
+	return autoVoid(c, func(api API) error {
+		return api.PlayTracks(ctx, uris)
+	})
+}
+
 func (c *autoClient) Pause(ctx context.Context) error {
 	return autoVoid(c, func(api API) error {
 		return api.Pause(ctx)

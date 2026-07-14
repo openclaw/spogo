@@ -17,6 +17,7 @@ func TestSpotifyMockAllNotImplemented(t *testing.T) {
 	_, _ = m.ArtistTopTracks(context.Background(), "1", 10)
 	_, _ = m.Playback(context.Background())
 	_ = m.Play(context.Background(), "uri")
+	_ = m.PlayTracks(context.Background(), []string{"uri"})
 	_ = m.Pause(context.Background())
 	_ = m.Next(context.Background())
 	_ = m.Previous(context.Background())

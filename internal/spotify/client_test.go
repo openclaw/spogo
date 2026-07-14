@@ -214,6 +214,37 @@ func TestPlayContextURI(t *testing.T) {
 	}
 }
 
+func TestPlayTracksPayloadOrder(t *testing.T) {
+	var captured []byte
+	var method, path string
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		method, path = r.Method, r.URL.Path
+		captured, _ = io.ReadAll(r.Body)
+		w.WriteHeader(http.StatusNoContent)
+	})
+	client, closeFn := newTestClient(t, handler)
+	defer closeFn()
+	uris := []string{"spotify:track:t1", "spotify:track:t2", "spotify:track:t3"}
+	if err := client.PlayTracks(context.Background(), uris); err != nil {
+		t.Fatalf("play tracks: %v", err)
+	}
+	if method != http.MethodPut || path != "/me/player/play" {
+		t.Fatalf("unexpected request %s %s", method, path)
+	}
+	var payload struct {
+		URIs []string `json:"uris"`
+	}
+	if err := json.Unmarshal(captured, &payload); err != nil {
+		t.Fatalf("unmarshal: %v body=%s", err, captured)
+	}
+	if len(payload.URIs) != 3 || payload.URIs[0] != "spotify:track:t1" || payload.URIs[1] != "spotify:track:t2" || payload.URIs[2] != "spotify:track:t3" {
+		t.Fatalf("expected ordered uris array, got: %#v", payload.URIs)
+	}
+	if strings.Contains(string(captured), "context_uri") {
+		t.Fatalf("unexpected context_uri in body: %s", captured)
+	}
+}
+
 func TestQueueNoContent(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)

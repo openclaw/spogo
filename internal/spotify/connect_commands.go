@@ -69,6 +69,37 @@ func (c *ConnectClient) playViaWebAPI(ctx context.Context, uri string) error {
 	})
 }
 
+// playTracks starts an ordered list of track URIs. The Connect play command
+// models a single context plus an optional skip_to target, so it cannot cleanly
+// represent an ad-hoc ordered track list. Zero/one URIs keep the native Connect
+// path (resume / single play); two or more delegate to the Web API's
+// /me/player/play endpoint, which natively accepts an ordered uris array. The
+// web fallback carries the same device targeting as the single-track fallback.
+func (c *ConnectClient) playTracks(ctx context.Context, uris []string) error {
+	if len(uris) <= 1 {
+		uri := ""
+		if len(uris) == 1 {
+			uri = uris[0]
+		}
+		return c.play(ctx, uri)
+	}
+	deviceID := strings.TrimSpace(c.device)
+	if deviceID != "" {
+		if state, err := c.connectState(ctx); err == nil {
+			if targetID := resolveConnectTargetDeviceID(state, deviceID); targetID != "" {
+				deviceID = targetID
+			}
+		}
+	}
+	return c.playTracksViaWebAPI(ctx, uris, deviceID)
+}
+
+func (c *ConnectClient) playTracksViaWebAPI(ctx context.Context, uris []string, deviceID string) error {
+	return withWebFallback(c, func(web *Client) error {
+		return web.playTracks(ctx, uris, deviceID)
+	})
+}
+
 func (c *ConnectClient) pause(ctx context.Context) error {
 	return c.sendDirectCommand(ctx, "pause", nil)
 }

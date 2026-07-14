@@ -20,6 +20,13 @@ func (m *SpotifyMock) Play(ctx context.Context, uri string) error {
 	return m.PlayFn(ctx, uri)
 }
 
+func (m *SpotifyMock) PlayTracks(ctx context.Context, uris []string) error {
+	if m.PlayTracksFn == nil {
+		return ErrNotImplemented
+	}
+	return m.PlayTracksFn(ctx, uris)
+}
+
 func (m *SpotifyMock) Pause(ctx context.Context) error {
 	if m.PauseFn == nil {
 		return ErrNotImplemented

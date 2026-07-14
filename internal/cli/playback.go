@@ -13,9 +13,9 @@ import (
 )
 
 type PlayCmd struct {
-	Item    string `arg:"" optional:"" help:"Spotify ID/URL/URI."`
-	Type    string `help:"Type for raw IDs (track|album|playlist|show|episode)."`
-	Shuffle bool   `help:"Enable shuffle before playing."`
+	Items   []string `arg:"" optional:"" help:"Spotify ID/URL/URI. Pass two or more track URIs to start an ordered track list."`
+	Type    string   `help:"Type for raw IDs (track|album|playlist|show|episode)."`
+	Shuffle bool     `help:"Enable shuffle before playing."`
 }
 
 type PauseCmd struct{}
@@ -51,53 +51,17 @@ func (cmd *PlayCmd) Run(ctx *app.Context) error {
 	if err != nil {
 		return err
 	}
+	// Two or more arguments start an ordered list of tracks in a single request
+	// (not a queue append). One argument keeps the existing single-item behavior
+	// (track/context/artist top-track); no argument resumes.
+	if len(cmd.Items) > 1 {
+		return cmd.runTracks(ctx, cmdCtx, client)
+	}
 	uri := ""
-	if cmd.Item != "" {
-		res, err := spotify.ParseResource(cmd.Item)
+	if len(cmd.Items) == 1 {
+		uri, err = resolvePlayURI(cmdCtx, client, cmd.Items[0], cmd.Type)
 		if err != nil {
 			return err
-		}
-		if res.URI == "" {
-			if cmd.Type == "" {
-				return errors.New("type required for raw id")
-			}
-			res.Type = cmd.Type
-			res.URI = "spotify:" + cmd.Type + ":" + res.ID
-		}
-		if res.Type == "artist" {
-			topTracks, ok := client.(artistTopTracks)
-			if !ok {
-				return errors.New("artist playback not supported by engine")
-			}
-			tracks, err := topTracks.ArtistTopTracks(cmdCtx, res.ID, 10)
-			if err == nil && len(tracks) > 0 {
-				uri = tracks[0].URI
-			} else {
-				artist, aerr := client.GetArtist(cmdCtx, res.ID)
-				if aerr != nil || artist.Name == "" {
-					if err != nil {
-						return err
-					}
-					return errors.New("no artist tracks found")
-				}
-				query := fmt.Sprintf("artist:%q", artist.Name)
-				search, serr := client.Search(cmdCtx, "track", query, 1, 0)
-				if serr != nil {
-					if err != nil {
-						return err
-					}
-					return serr
-				}
-				if len(search.Items) == 0 {
-					if err != nil {
-						return err
-					}
-					return errors.New("no artist tracks found")
-				}
-				uri = search.Items[0].URI
-			}
-		} else {
-			uri = res.URI
 		}
 	}
 	if cmd.Shuffle {
@@ -109,6 +73,104 @@ func (cmd *PlayCmd) Run(ctx *app.Context) error {
 		return err
 	}
 	return emitOK(ctx, nil, "Playback started")
+}
+
+// runTracks starts an ordered list of track URIs. Every argument must resolve to
+// a track; contexts (album/playlist/show/episode) and artists are rejected so
+// the ordered list stays unambiguous.
+func (cmd *PlayCmd) runTracks(ctx *app.Context, cmdCtx context.Context, client spotify.API) error {
+	uris := make([]string, 0, len(cmd.Items))
+	for _, item := range cmd.Items {
+		uri, err := resolveTrackURI(item, cmd.Type)
+		if err != nil {
+			return err
+		}
+		uris = append(uris, uri)
+	}
+	if cmd.Shuffle {
+		if err := client.Shuffle(cmdCtx, true); err != nil {
+			return err
+		}
+	}
+	if err := client.PlayTracks(cmdCtx, uris); err != nil {
+		return err
+	}
+	return emitOK(ctx, map[string]any{"status": "ok", "count": len(uris)}, fmt.Sprintf("Playing %d tracks", len(uris)))
+}
+
+// resolvePlayURI resolves a single play target, preserving artist top-track and
+// raw-id-with-type behavior.
+func resolvePlayURI(ctx context.Context, client spotify.API, item, typeFlag string) (string, error) {
+	res, err := spotify.ParseResource(item)
+	if err != nil {
+		return "", err
+	}
+	if res.URI == "" {
+		if typeFlag == "" {
+			return "", errors.New("type required for raw id")
+		}
+		res.Type = typeFlag
+		res.URI = "spotify:" + typeFlag + ":" + res.ID
+	}
+	if res.Type != "artist" {
+		return res.URI, nil
+	}
+	return resolveArtistURI(ctx, client, res)
+}
+
+func resolveArtistURI(ctx context.Context, client spotify.API, res spotify.Resource) (string, error) {
+	topTracks, ok := client.(artistTopTracks)
+	if !ok {
+		return "", errors.New("artist playback not supported by engine")
+	}
+	tracks, err := topTracks.ArtistTopTracks(ctx, res.ID, 10)
+	if err == nil && len(tracks) > 0 {
+		return tracks[0].URI, nil
+	}
+	artist, aerr := client.GetArtist(ctx, res.ID)
+	if aerr != nil || artist.Name == "" {
+		if err != nil {
+			return "", err
+		}
+		return "", errors.New("no artist tracks found")
+	}
+	query := fmt.Sprintf("artist:%q", artist.Name)
+	search, serr := client.Search(ctx, "track", query, 1, 0)
+	if serr != nil {
+		if err != nil {
+			return "", err
+		}
+		return "", serr
+	}
+	if len(search.Items) == 0 {
+		if err != nil {
+			return "", err
+		}
+		return "", errors.New("no artist tracks found")
+	}
+	return search.Items[0].URI, nil
+}
+
+// resolveTrackURI resolves one argument to a track URI for ordered multi-track
+// play. Raw IDs require --type track; any non-track resource is rejected.
+func resolveTrackURI(item, typeFlag string) (string, error) {
+	res, err := spotify.ParseResource(item)
+	if err != nil {
+		return "", err
+	}
+	if res.URI == "" {
+		if typeFlag == "" {
+			return "", errors.New("type required for raw id")
+		}
+		if typeFlag != "track" {
+			return "", fmt.Errorf("multi-track play only supports tracks, got type %q", typeFlag)
+		}
+		return "spotify:track:" + res.ID, nil
+	}
+	if res.Type != "track" {
+		return "", fmt.Errorf("multi-track play only supports tracks, got %s %q", res.Type, item)
+	}
+	return res.URI, nil
 }
 
 func (cmd *PauseCmd) Run(ctx *app.Context) error {

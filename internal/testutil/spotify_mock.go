@@ -20,6 +20,7 @@ type SpotifyMock struct {
 	ArtistTopTracksFn   func(context.Context, string, int) ([]spotify.Item, error)
 	PlaybackFn          func(context.Context) (spotify.PlaybackStatus, error)
 	PlayFn              func(context.Context, string) error
+	PlayTracksFn        func(context.Context, []string) error
 	PauseFn             func(context.Context) error
 	NextFn              func(context.Context) error
 	PreviousFn          func(context.Context) error

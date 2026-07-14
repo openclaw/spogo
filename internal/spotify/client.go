@@ -197,6 +197,27 @@ func (c *Client) Play(ctx context.Context, uri string) error {
 	return c.put(ctx, "/me/player/play", payload)
 }
 
+// PlayTracks starts playback from an ordered list of track URIs in a single
+// request. Spotify plays the first URI and continues through the rest, without
+// creating a playlist. It is not queue-append; the list replaces the current
+// playback context.
+func (c *Client) PlayTracks(ctx context.Context, uris []string) error {
+	return c.playTracks(ctx, uris, "")
+}
+
+func (c *Client) playTracks(ctx context.Context, uris []string, deviceID string) error {
+	payload := map[string]any{}
+	if len(uris) > 0 {
+		payload["uris"] = uris
+	}
+	var params url.Values
+	if deviceID != "" {
+		params = url.Values{}
+		params.Set("device_id", deviceID)
+	}
+	return c.send(ctx, http.MethodPut, "/me/player/play", params, payload, nil)
+}
+
 func (c *Client) Pause(ctx context.Context) error {
 	return c.put(ctx, "/me/player/pause", nil)
 }

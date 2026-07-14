@@ -21,7 +21,7 @@ func TestPlayCmdURI(t *testing.T) {
 		},
 	}
 	ctx.SetSpotify(mock)
-	cmd := PlayCmd{Item: "spotify:track:t1"}
+	cmd := PlayCmd{Items: []string{"spotify:track:t1"}}
 	if err := cmd.Run(ctx); err != nil {
 		t.Fatalf("run: %v", err)
 	}
@@ -30,7 +30,7 @@ func TestPlayCmdURI(t *testing.T) {
 func TestPlayCmdInvalidResource(t *testing.T) {
 	ctx, _, _ := testutil.NewTestContext(t, output.FormatPlain)
 	ctx.SetSpotify(&testutil.SpotifyMock{PlayFn: func(ctx context.Context, uri string) error { return nil }})
-	cmd := PlayCmd{Item: "spotify:bad:t1"}
+	cmd := PlayCmd{Items: []string{"spotify:bad:t1"}}
 	if err := cmd.Run(ctx); err == nil {
 		t.Fatalf("expected error")
 	}
@@ -152,8 +152,103 @@ func TestPlayCmdShuffleError(t *testing.T) {
 		ShuffleFn: func(ctx context.Context, enabled bool) error { return errors.New("boom") },
 		PlayFn:    func(ctx context.Context, uri string) error { t.Fatalf("play should not run"); return nil },
 	})
-	cmd := PlayCmd{Item: "spotify:track:t1", Shuffle: true}
+	cmd := PlayCmd{Items: []string{"spotify:track:t1"}, Shuffle: true}
 	if err := cmd.Run(ctx); err == nil {
 		t.Fatalf("expected error")
+	}
+}
+
+func TestPlayCmdMultiTrackOrdered(t *testing.T) {
+	ctx, _, _ := testutil.NewTestContext(t, output.FormatPlain)
+	var got []string
+	mock := &testutil.SpotifyMock{
+		PlayTracksFn: func(ctx context.Context, uris []string) error {
+			got = uris
+			return nil
+		},
+		PlayFn: func(context.Context, string) error { t.Fatalf("Play should not run for multi-track"); return nil },
+	}
+	ctx.SetSpotify(mock)
+	cmd := PlayCmd{Items: []string{"spotify:track:t1", "spotify:track:t2", "spotify:track:t3"}}
+	if err := cmd.Run(ctx); err != nil {
+		t.Fatalf("run: %v", err)
+	}
+	want := []string{"spotify:track:t1", "spotify:track:t2", "spotify:track:t3"}
+	if len(got) != len(want) {
+		t.Fatalf("got %#v want %#v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("uri[%d]=%s want %s (order matters)", i, got[i], want[i])
+		}
+	}
+}
+
+func TestPlayCmdMultiTrackRawIDsRequireTrackType(t *testing.T) {
+	ctx, _, _ := testutil.NewTestContext(t, output.FormatPlain)
+	var got []string
+	mock := &testutil.SpotifyMock{
+		PlayTracksFn: func(ctx context.Context, uris []string) error {
+			got = uris
+			return nil
+		},
+	}
+	ctx.SetSpotify(mock)
+
+	// Raw IDs without --type are rejected.
+	if err := (&PlayCmd{Items: []string{"id1", "id2"}}).Run(ctx); err == nil {
+		t.Fatalf("expected error for raw ids without type")
+	}
+	// Raw IDs with --type track build ordered track URIs.
+	if err := (&PlayCmd{Items: []string{"id1", "id2"}, Type: "track"}).Run(ctx); err != nil {
+		t.Fatalf("run with type track: %v", err)
+	}
+	if len(got) != 2 || got[0] != "spotify:track:id1" || got[1] != "spotify:track:id2" {
+		t.Fatalf("unexpected uris: %#v", got)
+	}
+	// Raw IDs with a non-track --type are rejected.
+	if err := (&PlayCmd{Items: []string{"id1", "id2"}, Type: "album"}).Run(ctx); err == nil {
+		t.Fatalf("expected error for non-track type in multi-track mode")
+	}
+}
+
+func TestPlayCmdMultiTrackRejectsNonTrack(t *testing.T) {
+	ctx, _, _ := testutil.NewTestContext(t, output.FormatPlain)
+	mock := &testutil.SpotifyMock{
+		PlayTracksFn: func(context.Context, []string) error {
+			t.Fatalf("PlayTracks should not run when a non-track item is present")
+			return nil
+		},
+	}
+	ctx.SetSpotify(mock)
+	cmd := PlayCmd{Items: []string{"spotify:track:t1", "spotify:album:a1"}}
+	if err := cmd.Run(ctx); err == nil {
+		t.Fatalf("expected error for album in multi-track mode")
+	}
+}
+
+func TestPlayCmdMultiTrackShuffle(t *testing.T) {
+	ctx, _, _ := testutil.NewTestContext(t, output.FormatPlain)
+	calls := []string{}
+	mock := &testutil.SpotifyMock{
+		ShuffleFn: func(ctx context.Context, enabled bool) error {
+			if !enabled {
+				t.Fatalf("expected shuffle enabled")
+			}
+			calls = append(calls, "shuffle")
+			return nil
+		},
+		PlayTracksFn: func(ctx context.Context, uris []string) error {
+			calls = append(calls, "playtracks")
+			return nil
+		},
+	}
+	ctx.SetSpotify(mock)
+	cmd := PlayCmd{Items: []string{"spotify:track:t1", "spotify:track:t2"}, Shuffle: true}
+	if err := cmd.Run(ctx); err != nil {
+		t.Fatalf("run: %v", err)
+	}
+	if len(calls) != 2 || calls[0] != "shuffle" || calls[1] != "playtracks" {
+		t.Fatalf("unexpected call order: %#v", calls)
 	}
 }

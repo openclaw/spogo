@@ -380,6 +380,7 @@ func (dummySpotify) Playback(context.Context) (spotify.PlaybackStatus, error) {
 	return spotify.PlaybackStatus{}, nil
 }
 func (dummySpotify) Play(context.Context, string) error                { return nil }
+func (dummySpotify) PlayTracks(context.Context, []string) error        { return nil }
 func (dummySpotify) Pause(context.Context) error                       { return nil }
 func (dummySpotify) Next(context.Context) error                        { return nil }
 func (dummySpotify) Previous(context.Context) error                    { return nil }

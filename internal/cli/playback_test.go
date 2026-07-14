@@ -37,7 +37,7 @@ func TestPlayCmdWithType(t *testing.T) {
 		},
 	}
 	ctx.SetSpotify(mock)
-	cmd := PlayCmd{Item: "abc", Type: "track"}
+	cmd := PlayCmd{Items: []string{"abc"}, Type: "track"}
 	if err := cmd.Run(ctx); err != nil {
 		t.Fatalf("run: %v", err)
 	}
@@ -63,7 +63,7 @@ func TestPlayCmdShuffle(t *testing.T) {
 		},
 	}
 	ctx.SetSpotify(mock)
-	cmd := PlayCmd{Item: "abc", Type: "track", Shuffle: true}
+	cmd := PlayCmd{Items: []string{"abc"}, Type: "track", Shuffle: true}
 	if err := cmd.Run(ctx); err != nil {
 		t.Fatalf("run: %v", err)
 	}
@@ -177,7 +177,7 @@ func TestPlayCmdMissingType(t *testing.T) {
 	ctx, _, _ := testutil.NewTestContext(t, output.FormatPlain)
 	mock := &testutil.SpotifyMock{PlayFn: func(ctx context.Context, uri string) error { return nil }}
 	ctx.SetSpotify(mock)
-	cmd := PlayCmd{Item: "abc"}
+	cmd := PlayCmd{Items: []string{"abc"}}
 	if err := cmd.Run(ctx); err == nil {
 		t.Fatalf("expected error")
 	}

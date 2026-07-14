@@ -30,7 +30,7 @@ func TestPlayCmdArtistTopTrack(t *testing.T) {
 		},
 	}
 	ctx.SetSpotify(mock)
-	cmd := PlayCmd{Item: "spotify:artist:abc"}
+	cmd := PlayCmd{Items: []string{"spotify:artist:abc"}}
 	if err := cmd.Run(ctx); err != nil {
 		t.Fatalf("run: %v", err)
 	}
@@ -47,7 +47,7 @@ func TestPlayCmdArtistFallbackSearch(t *testing.T) {
 		PlayFn: func(context.Context, string) error { return nil },
 	}
 	ctx.SetSpotify(mock)
-	if err := (&PlayCmd{Item: "spotify:artist:abc"}).Run(ctx); err != nil {
+	if err := (&PlayCmd{Items: []string{"spotify:artist:abc"}}).Run(ctx); err != nil {
 		t.Fatalf("run: %v", err)
 	}
 }
@@ -58,7 +58,7 @@ func TestPlayCmdArtistFallbackArtistError(t *testing.T) {
 		ArtistTopTracksFn: func(context.Context, string, int) ([]spotify.Item, error) { return nil, errors.New("boom") },
 		GetArtistFn:       func(context.Context, string) (spotify.Item, error) { return spotify.Item{}, errors.New("missing") },
 	})
-	if err := (&PlayCmd{Item: "spotify:artist:abc"}).Run(ctx); err == nil {
+	if err := (&PlayCmd{Items: []string{"spotify:artist:abc"}}).Run(ctx); err == nil {
 		t.Fatalf("expected error")
 	}
 }
@@ -72,7 +72,7 @@ func TestPlayCmdArtistFallbackSearchEmpty(t *testing.T) {
 			return spotify.SearchResult{}, nil
 		},
 	})
-	if err := (&PlayCmd{Item: "spotify:artist:abc"}).Run(ctx); err == nil {
+	if err := (&PlayCmd{Items: []string{"spotify:artist:abc"}}).Run(ctx); err == nil {
 		t.Fatalf("expected error")
 	}
 }
@@ -86,7 +86,7 @@ func TestPlayCmdArtistFallbackSearchError(t *testing.T) {
 			return spotify.SearchResult{}, errors.New("search fail")
 		},
 	})
-	if err := (&PlayCmd{Item: "spotify:artist:abc"}).Run(ctx); err == nil {
+	if err := (&PlayCmd{Items: []string{"spotify:artist:abc"}}).Run(ctx); err == nil {
 		t.Fatalf("expected error")
 	}
 }

@@ -72,6 +72,11 @@ func (a apiStub) Play(context.Context, string) error {
 	return nil
 }
 
+func (a apiStub) PlayTracks(context.Context, []string) error {
+	a.note("PlayTracks")
+	return nil
+}
+
 func (a apiStub) Pause(ctx context.Context) error {
 	a.note("Pause")
 	if a.pauseFn != nil {

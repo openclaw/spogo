@@ -108,7 +108,7 @@ Drive what's playing. See [Playback](playback.md).
 
 | Command | Purpose |
 | --- | --- |
-| `spogo play [<id|url>] [--type <kind>] [--shuffle]` | Resume, or start a track / album / playlist / show / artist. |
+| `spogo play [<id\|url> ...] [--type <kind>] [--shuffle]` | Resume, start a track / album / playlist / show / artist, or start an ordered list from two or more track URIs. |
 | `spogo pause` | Pause current playback. |
 | `spogo next` | Skip to the next item. |
 | `spogo prev` | Previous (restart current if past ~3s). |

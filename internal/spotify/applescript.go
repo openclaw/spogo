@@ -49,6 +49,17 @@ func (c *AppleScriptClient) Play(ctx context.Context, uri string) error {
 	return err
 }
 
+// PlayTracks starts an ordered list of track URIs. The local Spotify app can
+// only start one track at a time via AppleScript, so an ordered remote list is
+// delegated to the fallback engine (Web/Connect), consistent with how other
+// Web-API-shaped operations behave here.
+func (c *AppleScriptClient) PlayTracks(ctx context.Context, uris []string) error {
+	if c.fallback != nil {
+		return c.fallback.PlayTracks(ctx, uris)
+	}
+	return ErrUnsupported
+}
+
 func (c *AppleScriptClient) Pause(ctx context.Context) error {
 	_, err := c.runScript(ctx, `tell application "Spotify" to pause`)
 	return err

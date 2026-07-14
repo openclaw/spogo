@@ -103,6 +103,10 @@ func (c *ConnectClient) Play(ctx context.Context, uri string) error {
 	return c.play(ctx, uri)
 }
 
+func (c *ConnectClient) PlayTracks(ctx context.Context, uris []string) error {
+	return c.playTracks(ctx, uris)
+}
+
 func (c *ConnectClient) Pause(ctx context.Context) error {
 	return c.pause(ctx)
 }
