@@ -66,7 +66,8 @@ func TestClientRetriesOnRateLimit(t *testing.T) {
 // retry policy is unchanged: a mutating request (PUT /me/player/play) is still
 // retried across all attempts on repeated 429s, and the final surfaced error
 // carries the Retry-After from the last response so callers can see the
-// cooldown.
+// cooldown hint. The hint is Spotify's earliest-retry guidance, not a
+// guarantee that waiting it out clears the rate limit.
 func TestClientRetriesRateLimitedMutationAndSurfacesRetryAfter(t *testing.T) {
 	provider := &countingTokenProvider{}
 	requests := 0
@@ -119,7 +120,7 @@ func TestClientRetriesRateLimitedMutationAndSurfacesRetryAfter(t *testing.T) {
 	if apiErr.RetryAfter != 42*time.Second {
 		t.Fatalf("retry after = %v, want 42s", apiErr.RetryAfter)
 	}
-	if !strings.Contains(apiErr.Error(), "retry after 42s") {
-		t.Fatalf("expected retry-after in error string, got %q", apiErr.Error())
+	if !strings.Contains(apiErr.Error(), "retry-after hint 42s") {
+		t.Fatalf("expected retry-after hint in error string, got %q", apiErr.Error())
 	}
 }

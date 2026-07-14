@@ -45,8 +45,8 @@ func TestAPIErrorFromResponseRetryAfter(t *testing.T) {
 	if apiErr.RetryAfter != 42*time.Second {
 		t.Fatalf("retry after = %v, want 42s", apiErr.RetryAfter)
 	}
-	if !strings.Contains(apiErr.Error(), "retry after 42s") {
-		t.Fatalf("expected retry-after in error string, got %q", apiErr.Error())
+	if !strings.Contains(apiErr.Error(), "retry-after hint 42s") {
+		t.Fatalf("expected retry-after hint in error string, got %q", apiErr.Error())
 	}
 }
 

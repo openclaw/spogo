@@ -14,16 +14,20 @@ var ErrNoContent = fmt.Errorf("no content")
 var ErrUnsupported = errors.New("unsupported operation")
 
 type APIError struct {
-	Status     int
-	Message    string
-	Body       string
+	Status  int
+	Message string
+	Body    string
+	// RetryAfter is the cooldown Spotify advertised via the Retry-After header.
+	// It is guidance for the earliest sensible retry, not a promise that the
+	// next request will succeed: Spotify may answer a post-cooldown retry with
+	// another 429 and a fresh Retry-After.
 	RetryAfter time.Duration
 }
 
 func (e APIError) Error() string {
 	suffix := ""
 	if e.RetryAfter > 0 {
-		suffix = fmt.Sprintf(" (retry after %s)", e.RetryAfter.Round(time.Second))
+		suffix = fmt.Sprintf(" (retry-after hint %s)", e.RetryAfter.Round(time.Second))
 	}
 	if e.Message != "" {
 		return fmt.Sprintf("spotify api error (%d): %s%s", e.Status, e.Message, suffix)
