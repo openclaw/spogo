@@ -6,23 +6,30 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
+	"time"
 )
 
 var ErrNoContent = fmt.Errorf("no content")
 var ErrUnsupported = errors.New("unsupported operation")
 
 type APIError struct {
-	Status  int
-	Message string
-	Body    string
+	Status     int
+	Message    string
+	Body       string
+	RetryAfter time.Duration
 }
 
 func (e APIError) Error() string {
+	suffix := ""
+	if e.RetryAfter > 0 {
+		suffix = fmt.Sprintf(" (retry after %s)", e.RetryAfter.Round(time.Second))
+	}
 	if e.Message != "" {
-		return fmt.Sprintf("spotify api error (%d): %s", e.Status, e.Message)
+		return fmt.Sprintf("spotify api error (%d): %s%s", e.Status, e.Message, suffix)
 	}
 	if e.Status != 0 {
-		return fmt.Sprintf("spotify api error (%d)", e.Status)
+		return fmt.Sprintf("spotify api error (%d)%s", e.Status, suffix)
 	}
 	return "spotify api error"
 }
@@ -47,5 +54,30 @@ func apiErrorFromResponse(resp *http.Response) error {
 	if message == "" {
 		message = payload.Message
 	}
-	return APIError{Status: status, Message: message, Body: string(body)}
+	return APIError{Status: status, Message: message, Body: string(body), RetryAfter: retryAfterFromResponse(resp)}
+}
+
+func retryAfterFromResponse(resp *http.Response) time.Duration {
+	if resp == nil {
+		return 0
+	}
+	header := resp.Header.Get("Retry-After")
+	if header == "" {
+		return 0
+	}
+	if seconds, err := strconv.Atoi(header); err == nil {
+		if seconds <= 0 {
+			return 0
+		}
+		return time.Duration(seconds) * time.Second
+	}
+	when, err := http.ParseTime(header)
+	if err != nil {
+		return 0
+	}
+	delay := time.Until(when)
+	if delay <= 0 {
+		return 0
+	}
+	return delay
 }
