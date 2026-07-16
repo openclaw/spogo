@@ -70,6 +70,13 @@ func TestAPIErrorFromResponseRetryAfterHTTPDate(t *testing.T) {
 	}
 }
 
+func TestRetryAfterFromResponseRejectsDurationOverflow(t *testing.T) {
+	resp := &http.Response{Header: http.Header{"Retry-After": []string{"9223372037"}}}
+	if got := retryAfterFromResponse(resp); got != 0 {
+		t.Fatalf("retry after = %v, want 0 for duration overflow", got)
+	}
+}
+
 func TestAPIErrorError(t *testing.T) {
 	err := APIError{Status: 400, Message: "bad"}
 	if err.Error() == "" {

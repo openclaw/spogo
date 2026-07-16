@@ -69,8 +69,9 @@ func retryAfterFromResponse(resp *http.Response) time.Duration {
 	if header == "" {
 		return 0
 	}
-	if seconds, err := strconv.Atoi(header); err == nil {
-		if seconds <= 0 {
+	if seconds, err := strconv.ParseInt(header, 10, 64); err == nil {
+		const maxDurationSeconds = int64(^uint64(0)>>1) / int64(time.Second)
+		if seconds <= 0 || seconds > maxDurationSeconds {
 			return 0
 		}
 		return time.Duration(seconds) * time.Second
