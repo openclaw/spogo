@@ -2,6 +2,8 @@
 
 ## 0.10.1 - Unreleased
 
+- Surface Spotify rate-limit `Retry-After` hints in errors for better backoff diagnostics. Thanks @clawSean.
+
 - Add Bash, Zsh, and Fish shell completions and show supported shells in command help (`#32`, thanks @kk-spartans)
 - Return the documented authentication exit code when browser cookies are unavailable
 - Build CI and release artifacts with Go 1.25.12 so upstream standard-library security fixes are included
