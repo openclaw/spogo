@@ -31,7 +31,8 @@ func TestWriteCompletion(t *testing.T) {
 		t.Run(tt.shell, func(t *testing.T) {
 			out := &bytes.Buffer{}
 			exitCode := -1
-			parser, err := kong.New(New(),
+			parser, err := kong.New(
+				New(),
 				kong.Name("spogo"),
 				kong.Writers(out, &bytes.Buffer{}),
 				kong.Vars(VersionVars()),
@@ -65,7 +66,8 @@ func TestRegisterCompletionPredictsFromKongModel(t *testing.T) {
 
 	out := &bytes.Buffer{}
 	exitCode := -1
-	parser, err := kong.New(New(),
+	parser, err := kong.New(
+		New(),
 		kong.Name("spogo"),
 		kong.Writers(out, &bytes.Buffer{}),
 		kong.Vars(VersionVars()),

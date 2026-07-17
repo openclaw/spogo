@@ -20,7 +20,8 @@ func main() {
 func run(args []string, out io.Writer, errOut io.Writer) int {
 	command := cli.New()
 	exitCode := -1
-	parser, err := kong.New(command,
+	parser, err := kong.New(
+		command,
 		kong.Name("spogo"),
 		kong.Description("Spotify power CLI using web cookies."),
 		kong.UsageOnError(),
