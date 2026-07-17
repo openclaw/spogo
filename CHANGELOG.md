@@ -1,12 +1,29 @@
 # Changelog
 
-## 0.10.1 - Unreleased
+## 0.10.1 - 2026-07-17
 
-- Surface Spotify rate-limit `Retry-After` hints in errors for better backoff diagnostics. Thanks @clawSean.
+### Highlights
+
+- Add native shell completion generation for Bash, Zsh, and Fish
+- Make missing browser authentication fail with the documented exit code for reliable automation
+- Surface Spotify rate-limit cooldown hints so callers can back off without guessing
+
+### CLI and authentication
 
 - Add Bash, Zsh, and Fish shell completions and show supported shells in command help (`#32`, thanks @kk-spartans)
-- Return the documented authentication exit code when browser cookies are unavailable
+- Return exit code `3` when browser cookies are unavailable instead of collapsing authentication failures into a generic command error
+- Surface Spotify `Retry-After` hints in API errors with bounded seconds and HTTP-date parsing (`#41`, thanks @clawSean)
+
+### Reliability and maintenance
+
 - Build CI and release artifacts with Go 1.25.12 so upstream standard-library security fixes are included
+- Refresh direct and transitive Go dependencies, including Kong, go-toml, x/crypto, x/sys, and modernc.org/libc
+- Refresh GitHub Actions and pinned dead-code, linting, and formatting tools
+
+### Documentation
+
+- Define product direction, compatibility guarantees, security boundaries, and change policy in `VISION.md`
+- Update source-install requirements and command documentation for the refreshed CLI and Go toolchain
 
 ## 0.10.0 - 2026-06-10
 
