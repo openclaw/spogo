@@ -1,6 +1,16 @@
 # Changelog
 
-## 0.10.2 - Unreleased
+## 0.10.2 - 2026-07-18
+
+### Highlights
+
+- Ship the first spogo release through the unified signed pipeline, using the OpenClaw Foundation Developer ID and Apple notarization for every macOS binary
+
+### Release engineering
+
+- Replace the tag-triggered release workflow with a thin, manually dispatched caller pinned to `openclaw/release-workflows@v1.0.0-alpha.12`
+- Bind published release notes byte-for-byte to this dated changelog section and verify immutable artifacts before publication
+- Hand verified release metadata to the Homebrew tap updater after publication
 
 ## 0.10.1 - 2026-07-17
 

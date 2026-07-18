@@ -35,32 +35,37 @@ gh run list -L 5 --branch main
 Example heading:
 - `## 0.1.0 - 2026-01-02`
 
-## 3) Commit, tag & push
+## 3) Merge the release prep
 ```sh
 git checkout main
-git pull
+git pull --ff-only
 
-# commit changelog + any release tweaks
-git commit -am "release: vX.Y.Z"
-
-git tag -a vX.Y.Z -m "Release X.Y.Z"
-git push origin main --tags
+# Commit the dated changelog section and any release tweaks on a PR.
+# Merge only after required CI is green.
 ```
 
-## 4) Verify GitHub release artifacts
-The tag push triggers `.github/workflows/release.yml` (GoReleaser). Ensure it completes successfully and the release has assets.
+Do not create or push the release tag manually. The unified workflow freezes the release source and creates the tag.
+
+## 4) Dispatch and verify the unified release
+
+Run the thin caller with the version without a `v` prefix:
 
 ```sh
-gh run list -L 5 --workflow release.yml
-gh release view vX.Y.Z
+gh workflow run release-unified.yml -f version=X.Y.Z
+gh run list -L 5 --workflow release-unified.yml
+gh run watch <run-id> --exit-status
 ```
 
-Ensure GitHub release notes are not empty (mirror the changelog section).
+Watch validation, tag creation, build/sign/notarize, draft creation, independent verification, publication, Homebrew handoff, and closeout. The legacy workflow in `release-legacy.yml` is manual-only and is not the production release path.
 
-If the workflow needs a rerun:
-```sh
-gh workflow run release.yml -f tag=vX.Y.Z
-```
+After success:
+
+- Download every published asset listed in `SHA256SUMS` and verify its SHA-256 digest.
+- Run `codesign --verify --strict --check-notarization` on every macOS binary and confirm its designated requirement is stable.
+- Confirm published release notes are byte-identical to the dated changelog section.
+- Confirm the `spogo` formula in the Homebrew tap points at the new version and matching SHA-256 hashes.
+- Confirm the closeout PR merged and opened the next `Unreleased` changelog section.
 
 ## Notes
 - GoReleaser publishes binaries for macOS, Linux, and Windows.
+- macOS binaries are signed with the OpenClaw Foundation Developer ID and notarized by Apple.
