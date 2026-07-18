@@ -18,7 +18,7 @@ jobs:
       contents: write
       pull-requests: write
       statuses: read
-    uses: openclaw/release-workflows/.github/workflows/release-go-cli.yml@v1.0.0-alpha.13
+    uses: openclaw/release-workflows/.github/workflows/release-go-cli.yml@v1
     with:
       version: ${{ inputs.version }}
       repository-type: openclaw
