@@ -1,13 +1,12 @@
-name: release
+# Legacy publishing fallback retained by migration policy. Tags do not trigger it.
+# This path bypasses unified signing and notarization; use only with explicit approval.
+name: Release (legacy manual fallback)
 
 on:
-  push:
-    tags:
-      - "v*"
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to (re)release (e.g. v0.1.0)"
+        description: "Existing tag to release (for example, v0.10.1)"
         required: true
         type: string
 
@@ -33,7 +32,6 @@ jobs:
         run: cp .goreleaser.yaml /tmp/.goreleaser.yaml
 
       - name: Checkout release tag
-        if: ${{ github.event_name == 'workflow_dispatch' }}
         run: git checkout ${{ inputs.tag }}
 
       - name: GoReleaser
@@ -50,12 +48,7 @@ jobs:
     needs: goreleaser
     steps:
       - name: Resolve release tag
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "RELEASE_TAG=${{ inputs.tag }}" >> "$GITHUB_ENV"
-          else
-            echo "RELEASE_TAG=${{ github.ref_name }}" >> "$GITHUB_ENV"
-          fi
+        run: echo "RELEASE_TAG=${{ inputs.tag }}" >> "$GITHUB_ENV"
 
       - name: Dispatch tap formula update
         env:
