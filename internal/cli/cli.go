@@ -10,8 +10,6 @@ import (
 	"github.com/steipete/spogo/internal/output"
 )
 
-const Version = "0.10.1"
-
 func New() *CLI {
 	return &CLI{}
 }
@@ -100,10 +98,10 @@ func outputFormat(jsonFlag, plainFlag bool) (output.Format, error) {
 
 func VersionVars() map[string]string {
 	return map[string]string{
-		"version": Version,
+		"version": currentVersion(),
 	}
 }
 
 func Usage() string {
-	return fmt.Sprintf("spogo %s", Version)
+	return fmt.Sprintf("spogo %s", currentVersion())
 }

@@ -11,6 +11,8 @@ builds:
     binary: spogo
     env:
       - CGO_ENABLED=0
+    ldflags:
+      - -s -w -X github.com/steipete/spogo/internal/cli.version={{ .Version }}
     targets:
       - linux_amd64
       - linux_arm64
@@ -21,6 +23,8 @@ builds:
     binary: spogo
     env:
       - CGO_ENABLED=1
+    ldflags:
+      - -s -w -X github.com/steipete/spogo/internal/cli.version={{ .Version }}
     targets:
       - darwin_amd64
       - darwin_arm64
