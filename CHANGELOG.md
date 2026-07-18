@@ -1,6 +1,19 @@
 # Changelog
 
-## Unreleased
+## 0.10.3 - 2026-07-18
+
+### Highlights
+
+- Make release and Homebrew-installed binaries report their actual tagged version
+
+### Fixed
+
+- Stamp the CLI version from the GoReleaser tag while retaining a `dev` fallback for every unstamped build
+- Remove stale hardcoded `0.10.1` version labels from the CLI and specification
+
+### Release engineering
+
+- Upgrade the unified release caller to `openclaw/release-workflows@v1.0.0-alpha.13`, including exact verified asset names and SHA-256 digests in the Homebrew handoff
 
 ## 0.10.2 - 2026-07-18
 

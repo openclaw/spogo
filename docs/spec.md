@@ -1,4 +1,4 @@
-# spogo CLI spec (v0.10.1)
+# spogo CLI spec
 
 One-liner: Spotify power CLI using web cookies; search + playback control.
 Parser: Kong.
