@@ -39,6 +39,10 @@ type tokenResponse struct {
 	ClientID                       string `json:"clientId"`
 }
 
+func newCookieTokenHTTPClient(jar http.CookieJar) *http.Client {
+	return &http.Client{Jar: jar, Timeout: defaultHTTPClientTimeout}
+}
+
 func (p CookieTokenProvider) Token(ctx context.Context) (Token, error) {
 	if p.Source == nil {
 		return Token{}, errors.New("cookie source required")
@@ -62,7 +66,7 @@ func (p CookieTokenProvider) Token(ctx context.Context) (Token, error) {
 	jar.SetCookies(baseURL, cookiesList)
 	client := p.Client
 	if client == nil {
-		client = &http.Client{Jar: jar}
+		client = newCookieTokenHTTPClient(jar)
 	} else {
 		client.Jar = jar
 	}

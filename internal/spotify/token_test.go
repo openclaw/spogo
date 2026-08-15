@@ -93,6 +93,14 @@ func TestCookieTokenProviderMissingToken(t *testing.T) {
 	}
 }
 
+func TestCookieTokenProviderFallbackClientTimeout(t *testing.T) {
+	client := newCookieTokenHTTPClient(nil)
+	if client.Timeout == 0 {
+		t.Fatal("fallback HTTP client must set Timeout so cookie token fetches cannot hang")
+	}
+	t.Logf("fallback client Timeout=%s", client.Timeout)
+}
+
 type countingProvider struct {
 	calls int
 }
