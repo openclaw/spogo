@@ -29,6 +29,7 @@ type CookieTokenProvider struct {
 	Source  cookies.Source
 	BaseURL string
 	Client  *http.Client
+	Timeout time.Duration
 }
 
 type tokenResponse struct {
@@ -39,8 +40,11 @@ type tokenResponse struct {
 	ClientID                       string `json:"clientId"`
 }
 
-func newCookieTokenHTTPClient(jar http.CookieJar) *http.Client {
-	return &http.Client{Jar: jar, Timeout: defaultHTTPClientTimeout}
+func newCookieTokenHTTPClient(jar http.CookieJar, timeout time.Duration) *http.Client {
+	if timeout <= 0 {
+		timeout = defaultHTTPClientTimeout
+	}
+	return &http.Client{Jar: jar, Timeout: timeout}
 }
 
 func (p CookieTokenProvider) Token(ctx context.Context) (Token, error) {
@@ -66,7 +70,7 @@ func (p CookieTokenProvider) Token(ctx context.Context) (Token, error) {
 	jar.SetCookies(baseURL, cookiesList)
 	client := p.Client
 	if client == nil {
-		client = newCookieTokenHTTPClient(jar)
+		client = newCookieTokenHTTPClient(jar, p.Timeout)
 	} else {
 		client.Jar = jar
 	}

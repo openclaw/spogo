@@ -94,11 +94,40 @@ func TestCookieTokenProviderMissingToken(t *testing.T) {
 }
 
 func TestCookieTokenProviderFallbackClientTimeout(t *testing.T) {
-	client := newCookieTokenHTTPClient(nil)
-	if client.Timeout == 0 {
-		t.Fatal("fallback HTTP client must set Timeout so cookie token fetches cannot hang")
+	client := newCookieTokenHTTPClient(nil, 0)
+	if client.Timeout != defaultHTTPClientTimeout {
+		t.Fatalf("fallback HTTP client Timeout=%s want %s", client.Timeout, defaultHTTPClientTimeout)
 	}
-	t.Logf("fallback client Timeout=%s", client.Timeout)
+}
+
+func TestCookieTokenProviderHonorsConfiguredTimeout(t *testing.T) {
+	want := 1500 * time.Millisecond
+	client := newCookieTokenHTTPClient(nil, want)
+	if client.Timeout != want {
+		t.Fatalf("Timeout=%s want %s", client.Timeout, want)
+	}
+	restore := SetTotpSecretFetcher(func(ctx context.Context) (int, []byte, error) {
+		return 1, []byte{1, 2, 3, 4}, nil
+	})
+	t.Cleanup(restore)
+	started := time.Now()
+	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		time.Sleep(2 * time.Second)
+	}))
+	t.Cleanup(srv.Close)
+	provider := CookieTokenProvider{
+		Source:  stubCookieSource{},
+		BaseURL: srv.URL + "/",
+		Timeout: 200 * time.Millisecond,
+	}
+	_, err := provider.Token(context.Background())
+	elapsed := time.Since(started)
+	if err == nil {
+		t.Fatal("expected configured timeout to fail a stalled token endpoint")
+	}
+	if elapsed >= time.Second {
+		t.Fatalf("elapsed %s, wanted the 200ms configured timeout", elapsed)
+	}
 }
 
 type countingProvider struct {
