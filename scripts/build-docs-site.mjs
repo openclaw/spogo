@@ -404,10 +404,20 @@ function tocFromHtml(html) {
   const re = /<h([23]) id="([^"]+)">([\s\S]*?)<\/h[23]>/g;
   let m;
   while ((m = re.exec(html))) {
-    const text = m[3]
-      .replace(/<a class="anchor"[^>]*>.*?<\/a>/, "")
-      .replace(/<[^>]+>/g, "")
-      .trim();
+    let text = "";
+    let anchorDepth = 0;
+    for (const part of m[3].split(/(<[^>]+>)/g)) {
+      if (part.startsWith('<a class="anchor"')) {
+        anchorDepth += 1;
+      } else if (anchorDepth > 0 && /^<a(?:\s|>)/.test(part)) {
+        anchorDepth += 1;
+      } else if (anchorDepth > 0 && part === "</a>") {
+        anchorDepth -= 1;
+      } else if (anchorDepth === 0 && !part.startsWith("<")) {
+        text += part;
+      }
+    }
+    text = text.trim();
     items.push({ level: Number(m[1]), id: m[2], text });
   }
   if (items.length < 2) return "";

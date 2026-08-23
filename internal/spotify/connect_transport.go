@@ -109,7 +109,7 @@ func (c *ConnectClient) ensureConnectDevice(ctx context.Context, auth connectAut
 	if !needs {
 		return nil
 	}
-	connectionID, err := getConnectionID(ctx, auth.AccessToken)
+	connectionID, err := getConnectionID(ctx, auth.AccessToken, c.client.Timeout)
 	if err != nil {
 		return err
 	}
@@ -243,8 +243,8 @@ func (c *ConnectClient) sendConnectRequest(ctx context.Context, method, url stri
 	return nil
 }
 
-func getConnectionID(ctx context.Context, accessToken string) (string, error) {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+func getConnectionID(ctx context.Context, accessToken string, timeout time.Duration) (string, error) {
+	ctx, cancel := dealerConnectionContext(ctx, timeout)
 	defer cancel()
 	url := dealerURL
 	sep := "?"
@@ -290,6 +290,16 @@ func getConnectionID(ctx context.Context, accessToken string) (string, error) {
 		}
 	}
 	return "", errors.New("missing connection id")
+}
+
+func dealerConnectionContext(ctx context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
+	if timeout == 0 {
+		timeout = defaultHTTPClientTimeout
+	}
+	if timeout < 0 {
+		return context.WithCancel(ctx)
+	}
+	return context.WithTimeout(ctx, timeout)
 }
 
 type redactedDealerError struct {

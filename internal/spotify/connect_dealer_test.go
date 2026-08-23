@@ -32,12 +32,42 @@ func TestGetConnectionID(t *testing.T) {
 	dealerURL = "ws" + strings.TrimPrefix(srv.URL, "http")
 	t.Cleanup(func() { dealerURL = prev })
 
-	id, err := getConnectionID(context.Background(), "token")
+	id, err := getConnectionID(context.Background(), "token", 0)
 	if err != nil {
 		t.Fatalf("getConnectionID: %v", err)
 	}
 	if id != "conn-id" {
 		t.Fatalf("unexpected id: %s", id)
+	}
+}
+
+func TestDealerConnectionContextTimeout(t *testing.T) {
+	tests := []struct {
+		name         string
+		timeout      time.Duration
+		wantTimeout  time.Duration
+		wantDeadline bool
+	}{
+		{name: "zero uses default", timeout: 0, wantTimeout: defaultHTTPClientTimeout, wantDeadline: true},
+		{name: "positive uses configured timeout", timeout: 1500 * time.Millisecond, wantTimeout: 1500 * time.Millisecond, wantDeadline: true},
+		{name: "negative is unlimited", timeout: -time.Second},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			before := time.Now()
+			ctx, cancel := dealerConnectionContext(context.Background(), tt.timeout)
+			t.Cleanup(cancel)
+			after := time.Now()
+
+			deadline, ok := ctx.Deadline()
+			if ok != tt.wantDeadline {
+				t.Fatalf("deadline present = %t, want %t", ok, tt.wantDeadline)
+			}
+			if ok && (deadline.Before(before.Add(tt.wantTimeout)) || deadline.After(after.Add(tt.wantTimeout))) {
+				t.Fatalf("deadline = %s, want timeout %s", deadline, tt.wantTimeout)
+			}
+		})
 	}
 }
 
@@ -93,7 +123,7 @@ func TestGetConnectionIDMissingHeader(t *testing.T) {
 	dealerURL = "ws" + strings.TrimPrefix(srv.URL, "http")
 	t.Cleanup(func() { dealerURL = prev })
 
-	if _, err := getConnectionID(context.Background(), "token"); err == nil {
+	if _, err := getConnectionID(context.Background(), "token", 0); err == nil {
 		t.Fatalf("expected error")
 	}
 }
@@ -116,7 +146,7 @@ func TestGetConnectionIDBadHeadersType(t *testing.T) {
 	dealerURL = "ws" + strings.TrimPrefix(srv.URL, "http")
 	t.Cleanup(func() { dealerURL = prev })
 
-	if _, err := getConnectionID(context.Background(), "token"); err == nil {
+	if _, err := getConnectionID(context.Background(), "token", 0); err == nil {
 		t.Fatalf("expected error")
 	}
 }
@@ -127,7 +157,7 @@ func TestGetConnectionIDDialError(t *testing.T) {
 	t.Cleanup(func() { dealerURL = prev })
 
 	const accessToken = "sensitive-test-token"
-	_, err := getConnectionID(context.Background(), accessToken)
+	_, err := getConnectionID(context.Background(), accessToken, 0)
 	if err == nil {
 		t.Fatalf("expected error")
 	}
@@ -160,7 +190,7 @@ func TestGetConnectionIDBadJSON(t *testing.T) {
 	dealerURL = "ws" + strings.TrimPrefix(srv.URL, "http")
 	t.Cleanup(func() { dealerURL = prev })
 
-	if _, err := getConnectionID(context.Background(), "token"); err == nil {
+	if _, err := getConnectionID(context.Background(), "token", 0); err == nil {
 		t.Fatalf("expected error")
 	}
 }
