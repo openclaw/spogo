@@ -52,12 +52,25 @@ func (c *ConnectClient) playlistInfo(ctx context.Context, id string) (Item, erro
 
 func (c *ConnectClient) showInfo(ctx context.Context, id string) (Item, error) {
 	return c.infoWithWebFallback(ctx, id, "show", func() (Item, error) {
-		return c.infoByOperation(ctx, "queryPodcastEpisodes", map[string]any{
+		item, err := c.infoByOperation(ctx, "queryPodcastEpisodes", map[string]any{
 			"uri":                            "spotify:show:" + id,
 			"offset":                         0,
 			"limit":                          25,
 			"includeEpisodeContentRatingsV2": false,
 		}, "show")
+		if err != nil || item.Publisher != "" || item.Name == "" {
+			return item, err
+		}
+		if payload, searchErr := c.graphQL(ctx, "searchDesktop", searchVariables(item.Name, 10, 0)); searchErr == nil {
+			matches, _ := extractSearchItems(payload, "show")
+			for _, match := range matches {
+				if match.URI == item.URI {
+					item.Publisher = match.Publisher
+					break
+				}
+			}
+		}
+		return item, nil
 	}, func(web *Client) (Item, error) {
 		return web.GetShow(ctx, id)
 	})
@@ -103,5 +116,6 @@ func (c *ConnectClient) infoWithWebFallback(ctx context.Context, id, kind string
 	if werr != nil {
 		return Item{}, err
 	}
-	return webLookup(web)
+	fallback, fallbackErr := webLookup(web)
+	return fallback, preserveRateLimitHint(err, fallbackErr)
 }

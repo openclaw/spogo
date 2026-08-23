@@ -137,6 +137,18 @@ func extractAlbumName(value any) string {
 }
 
 func extractOwnerName(value any) string {
+	if entity, ok := value.(map[string]any); ok {
+		for _, path := range [][]string{{"ownerV2", "data"}, {"owner"}, {"user", "data"}, {"user"}} {
+			if owner, ok := getMap(entity, path...); ok {
+				if name := getString(owner, "name"); name != "" {
+					return name
+				}
+				if name := getString(owner, "display_name"); name != "" {
+					return name
+				}
+			}
+		}
+	}
 	var owner string
 	walkMap(value, func(m map[string]any) {
 		if owner != "" {
@@ -154,6 +166,17 @@ func extractOwnerName(value any) string {
 		}
 	})
 	return owner
+}
+
+func extractShowName(entity map[string]any) string {
+	for _, path := range [][]string{{"podcastV2", "data"}, {"podcast", "data"}, {"podcast"}, {"show"}} {
+		if show, ok := getMap(entity, path...); ok {
+			if name := getString(show, "name"); name != "" {
+				return name
+			}
+		}
+	}
+	return ""
 }
 
 func walkMap(value any, fn func(map[string]any)) {

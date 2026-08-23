@@ -10,6 +10,7 @@ type Item struct {
 	URL           string   `json:"url"`
 	Artists       []string `json:"artists,omitempty"`
 	Album         string   `json:"album,omitempty"`
+	Show          string   `json:"show,omitempty"`
 	Owner         string   `json:"owner,omitempty"`
 	DurationMS    int      `json:"duration_ms,omitempty"`
 	Explicit      bool     `json:"-"`

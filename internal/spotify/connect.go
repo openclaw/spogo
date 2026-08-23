@@ -46,7 +46,7 @@ func NewConnectClient(opts ConnectOptions) (*ConnectClient, error) {
 	}
 	timeout := opts.Timeout
 	if timeout == 0 {
-		timeout = 10 * time.Second
+		timeout = defaultHTTPClientTimeout
 	}
 	httpClient := &http.Client{Timeout: timeout}
 	cache := newConnectCacheStore(opts.CachePath)
@@ -176,6 +176,10 @@ func (c *ConnectClient) FollowArtists(ctx context.Context, ids []string, method 
 }
 
 func (c *ConnectClient) FollowedArtists(ctx context.Context, limit int, after string) ([]Item, int, string, error) {
+	items, total, next, err := c.followedArtists(ctx, limit, after)
+	if err == nil {
+		return items, total, next, nil
+	}
 	return withWebCursorFallback(c, func(web *Client) ([]Item, int, string, error) {
 		return web.FollowedArtists(ctx, limit, after)
 	})
@@ -242,7 +246,8 @@ func withWebCollectionFallback(c *ConnectClient, primary func() ([]Item, int, er
 	if werr != nil {
 		return nil, 0, err
 	}
-	return fallback(web)
+	fallbackItems, fallbackTotal, fallbackErr := fallback(web)
+	return fallbackItems, fallbackTotal, preserveRateLimitHint(err, fallbackErr)
 }
 
 func withWebCursorFallback(c *ConnectClient, fallback func(*Client) ([]Item, int, string, error)) ([]Item, int, string, error) {
