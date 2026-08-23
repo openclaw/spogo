@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 )
+
+const queueHydrationConcurrency = 8
 
 func (c *ConnectClient) playback(ctx context.Context) (PlaybackStatus, error) {
 	return withConnectState(ctx, c, func(state connectState) (PlaybackStatus, error) {
@@ -151,8 +154,53 @@ func (c *ConnectClient) queueAdd(ctx context.Context, uri string) error {
 
 func (c *ConnectClient) queue(ctx context.Context) (Queue, error) {
 	return withConnectState(ctx, c, func(state connectState) (Queue, error) {
-		return mapQueue(state), nil
+		queue := mapQueue(state)
+		c.hydrateQueue(ctx, &queue)
+		return queue, nil
 	})
+}
+
+func (c *ConnectClient) hydrateQueue(ctx context.Context, queue *Queue) {
+	items := make([]*Item, 0, len(queue.Queue)+1)
+	if itemNeedsTrackMetadata(queue.CurrentlyPlaying) {
+		items = append(items, queue.CurrentlyPlaying)
+	}
+	for index := range queue.Queue {
+		if itemNeedsTrackMetadata(&queue.Queue[index]) {
+			items = append(items, &queue.Queue[index])
+		}
+	}
+	if len(items) == 0 || c.hashes == nil {
+		return
+	}
+	if _, err := c.hashes.Hash(ctx, "getTrack"); err != nil {
+		return
+	}
+	jobs := make(chan *Item)
+	var workers sync.WaitGroup
+	for range min(queueHydrationConcurrency, len(items)) {
+		workers.Add(1)
+		go func() {
+			defer workers.Done()
+			for item := range jobs {
+				full, err := c.infoByOperation(ctx, "getTrack", map[string]any{"uri": item.URI}, "track")
+				if err == nil {
+					mergeItemMetadata(item, full)
+				}
+			}
+		}()
+	}
+	for _, item := range items {
+		select {
+		case jobs <- item:
+		case <-ctx.Done():
+			close(jobs)
+			workers.Wait()
+			return
+		}
+	}
+	close(jobs)
+	workers.Wait()
 }
 
 func (c *ConnectClient) sendStateCommand(ctx context.Context, endpoint string, payload map[string]any) error {

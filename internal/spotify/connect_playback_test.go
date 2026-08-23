@@ -2,11 +2,14 @@ package spotify
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -567,5 +570,96 @@ func TestSendConnectCommandHTTPError(t *testing.T) {
 
 	if err := client.sendConnectCommand(context.Background(), "https://example.com", map[string]any{}); err == nil {
 		t.Fatalf("expected error")
+	}
+}
+
+func TestConnectQueueHydratesSparseTracksWithBoundedConcurrency(t *testing.T) {
+	const queuedCount = 12
+	next := make([]any, 0, queuedCount)
+	for index := 0; index < queuedCount; index++ {
+		entry := map[string]any{"uri": fmt.Sprintf("spotify:track:t%d", index)}
+		if index == 0 {
+			entry["metadata"] = map[string]any{"title": "Ready", "artist_name": "Ready Artist", "album_title": "Ready Album"}
+		}
+		next = append(next, entry)
+	}
+	statePayload := map[string]any{
+		"devices":          map[string]any{"device-1": map[string]any{"name": "Desk"}},
+		"active_device_id": "device-1",
+		"player_state": map[string]any{
+			"track":       map[string]any{"uri": "spotify:track:current"},
+			"next_tracks": next,
+		},
+	}
+	var active, maximum, lookups atomic.Int32
+	transport := roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+		switch {
+		case req.Method == http.MethodPut && strings.Contains(req.URL.Path, "/devices/hobs_"):
+			return jsonResponse(http.StatusOK, statePayload), nil
+		case req.URL.Host == "api-partner.spotify.com" && req.URL.Query().Get("operationName") == "getTrack":
+			lookups.Add(1)
+			current := active.Add(1)
+			for {
+				previous := maximum.Load()
+				if current <= previous || maximum.CompareAndSwap(previous, current) {
+					break
+				}
+			}
+			time.Sleep(5 * time.Millisecond)
+			active.Add(-1)
+			var variables map[string]any
+			if err := json.Unmarshal([]byte(req.URL.Query().Get("variables")), &variables); err != nil {
+				t.Errorf("decode track variables: %v", err)
+				return textResponse(http.StatusBadRequest, "invalid variables"), nil
+			}
+			uri := getString(variables, "uri")
+			if uri == "spotify:track:t7" {
+				return textResponse(http.StatusInternalServerError, "track unavailable"), nil
+			}
+			return jsonResponse(http.StatusOK, map[string]any{"data": map[string]any{"trackUnion": map[string]any{
+				"uri":         uri,
+				"name":        "Track " + idFromURI(uri),
+				"artists":     []any{map[string]any{"name": "Artist " + idFromURI(uri)}},
+				"album":       map[string]any{"name": "Album " + idFromURI(uri)},
+				"duration_ms": 123456,
+			}}}), nil
+		default:
+			t.Errorf("unexpected request outside internal GraphQL: %s", req.URL.Redacted())
+			return textResponse(http.StatusNotFound, "unexpected"), nil
+		}
+	})
+	client := newRegisteredConnectClientForTests(transport)
+	client.hashes.hashes["getTrack"] = "hash"
+	queue, err := client.Queue(context.Background())
+	if err != nil {
+		t.Fatalf("queue: %v", err)
+	}
+	if queue.CurrentlyPlaying == nil || queue.CurrentlyPlaying.Name != "Track current" || queue.CurrentlyPlaying.Album != "Album current" {
+		t.Fatalf("current track was not hydrated: %#v", queue.CurrentlyPlaying)
+	}
+	if len(queue.Queue) != queuedCount {
+		t.Fatalf("queue length = %d, want %d", len(queue.Queue), queuedCount)
+	}
+	for index, item := range queue.Queue {
+		switch index {
+		case 0:
+			if item.Name != "Ready" {
+				t.Fatalf("complete metadata was replaced: %#v", item)
+			}
+		case 7:
+			if item.Name != "" {
+				t.Fatalf("failed lookup unexpectedly hydrated: %#v", item)
+			}
+		default:
+			if item.Name == "" || len(item.Artists) == 0 || item.Album == "" || item.DurationMS != 123456 {
+				t.Fatalf("queue entry %d remains incomplete: %#v", index, item)
+			}
+		}
+	}
+	if got := lookups.Load(); got != queuedCount {
+		t.Fatalf("internal GraphQL lookups = %d, want %d", got, queuedCount)
+	}
+	if got := maximum.Load(); got <= 1 || got > queueHydrationConcurrency {
+		t.Fatalf("maximum queue hydration concurrency = %d, want between 2 and %d", got, queueHydrationConcurrency)
 	}
 }

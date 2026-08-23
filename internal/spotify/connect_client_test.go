@@ -32,14 +32,34 @@ func TestConnectInfoOperations(t *testing.T) {
 			"data": map[string]any{"playlist": map[string]any{"uri": "spotify:playlist:p1", "name": "Playlist"}},
 		},
 		"queryPodcastEpisodes": {
-			"data": map[string]any{"show": map[string]any{"uri": "spotify:show:s1", "name": "Show"}},
+			"data": map[string]any{"podcastUnionV2": map[string]any{"uri": "spotify:show:s1", "name": "Show"}},
 		},
 		"getEpisodeOrChapter": {
-			"data": map[string]any{"episode": map[string]any{"uri": "spotify:episode:e1", "name": "Episode"}},
+			"data": map[string]any{"episodeUnionV2": map[string]any{"uri": "spotify:episode:e1", "name": "Episode"}},
 		},
 	}
 	transport := roundTripperFunc(func(req *http.Request) (*http.Response, error) {
 		op := req.URL.Query().Get("operationName")
+		if op == "getAlbum" || op == "queryPodcastEpisodes" || op == "getEpisodeOrChapter" {
+			var variables map[string]any
+			if err := json.Unmarshal([]byte(req.URL.Query().Get("variables")), &variables); err != nil {
+				t.Fatalf("decode %s variables: %v", op, err)
+			}
+			switch op {
+			case "getAlbum":
+				if variables["uri"] != "spotify:album:a1" || variables["locale"] != "en-US" || variables["offset"] != float64(0) || variables["limit"] != float64(50) {
+					t.Fatalf("unexpected album variables: %#v", variables)
+				}
+			case "queryPodcastEpisodes":
+				if variables["uri"] != "spotify:show:s1" || variables["offset"] != float64(0) || variables["limit"] != float64(25) || variables["includeEpisodeContentRatingsV2"] != false {
+					t.Fatalf("unexpected show variables: %#v", variables)
+				}
+			case "getEpisodeOrChapter":
+				if variables["uri"] != "spotify:episode:e1" || variables["includeEpisodeContentRatingsV2"] != false {
+					t.Fatalf("unexpected episode variables: %#v", variables)
+				}
+			}
+		}
 		payload, ok := payloads[op]
 		if !ok {
 			return textResponse(http.StatusNotFound, "missing"), nil
@@ -47,6 +67,7 @@ func TestConnectInfoOperations(t *testing.T) {
 		return jsonResponse(http.StatusOK, payload), nil
 	})
 	client := newConnectClientForTests(transport)
+	client.language = "en-US"
 	for op := range payloads {
 		client.hashes.hashes[op] = "hash"
 	}

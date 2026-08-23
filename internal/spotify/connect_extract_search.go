@@ -1,5 +1,7 @@
 package spotify
 
+import "strings"
+
 func extractSearchItems(payload map[string]any, kind string) ([]Item, int) {
 	for _, path := range searchPaths(kind) {
 		if container, ok := getMap(payload, path...); ok {
@@ -16,23 +18,130 @@ func extractSearchItems(payload map[string]any, kind string) ([]Item, int) {
 }
 
 func extractItemFromPayload(payload map[string]any, kind string) (Item, bool) {
-	if kind == "track" {
-		if m, ok := getMap(payload, "data", "trackUnion"); ok {
-			if item, ok := extractItem(m, kind); ok {
+	return extractRequestedItemFromPayload(payload, kind, "")
+}
+
+func extractRequestedItemFromPayload(payload map[string]any, kind, requestedURI string) (Item, bool) {
+	for _, key := range itemPayloadKeys(kind) {
+		if entity, ok := getMap(payload, "data", key); ok {
+			if item, ok := extractRequestedEntity(entity, kind, requestedURI); ok {
 				return item, true
 			}
 		}
-		if m, ok := getMap(payload, "data", "track"); ok {
-			if item, ok := extractItem(m, kind); ok {
+	}
+	if requestedURI != "" {
+		var matched map[string]any
+		walkMap(payload, func(candidate map[string]any) {
+			if matched == nil && entityMatchesURI(candidate, kind, requestedURI) {
+				matched = candidate
+			}
+		})
+		if matched != nil {
+			if item, ok := extractRequestedEntity(matched, kind, requestedURI); ok {
 				return item, true
 			}
 		}
 	}
 	items := collectItemsByKind(payload, kind)
-	if len(items) == 0 {
+	for _, item := range items {
+		if requestedURI == "" || item.URI == requestedURI {
+			return item, true
+		}
+	}
+	return Item{}, false
+}
+
+func itemPayloadKeys(kind string) []string {
+	switch kind {
+	case "track":
+		return []string{"trackUnion", "track"}
+	case "album":
+		return []string{"albumUnion", "album"}
+	case "artist":
+		return []string{"artistUnion", "artist"}
+	case "playlist":
+		return []string{"playlistV2", "playlist"}
+	case "show":
+		return []string{"podcastUnionV2", "podcastUnion", "showUnion", "podcast", "show"}
+	case "episode":
+		return []string{"episodeUnionV2", "episodeUnion", "episodeOrChapter", "episode"}
+	default:
+		return nil
+	}
+}
+
+func extractRequestedEntity(entity map[string]any, kind, requestedURI string) (Item, bool) {
+	if requestedURI != "" && !entityMatchesURI(entity, kind, requestedURI) {
 		return Item{}, false
 	}
-	return items[0], true
+	if kind == "artist" {
+		if profile, ok := getMap(entity, "profile"); ok {
+			if name := getString(profile, "name"); name != "" {
+				named := make(map[string]any, len(entity)+1)
+				for key, value := range entity {
+					named[key] = value
+				}
+				named["name"] = name
+				entity = named
+			}
+		}
+	}
+	item, ok := extractItem(entity, kind)
+	if !ok {
+		return Item{}, false
+	}
+	if kind == "artist" {
+		item.Followers = getNestedInt(entity, "stats", "followers")
+		if item.Followers == 0 {
+			item.Followers = getNestedInt(entity, "followers", "total")
+		}
+		item.Genres = extractEntityGenres(entity)
+	}
+	return item, true
+}
+
+func entityMatchesURI(entity map[string]any, kind, requestedURI string) bool {
+	if uri := getString(entity, "uri"); uri != "" {
+		return uri == requestedURI
+	}
+	return getString(entity, "id") == strings.TrimPrefix(requestedURI, "spotify:"+kind+":")
+}
+
+func extractEntityGenres(entity map[string]any) []string {
+	genres := extractGenreNames(entity["genres"])
+	if len(genres) == 0 {
+		if profile, ok := getMap(entity, "profile"); ok {
+			genres = extractGenreNames(profile["genres"])
+		}
+	}
+	return dedupeStrings(genres)
+}
+
+func extractGenreNames(value any) []string {
+	switch typed := value.(type) {
+	case []string:
+		return typed
+	case []any:
+		genres := make([]string, 0, len(typed))
+		for _, raw := range typed {
+			switch genre := raw.(type) {
+			case string:
+				genres = append(genres, genre)
+			case map[string]any:
+				if name := getString(genre, "name"); name != "" {
+					genres = append(genres, name)
+				}
+			}
+		}
+		return genres
+	case map[string]any:
+		for _, key := range []string{"items", "nodes"} {
+			if genres := extractGenreNames(typed[key]); len(genres) > 0 {
+				return genres
+			}
+		}
+	}
+	return nil
 }
 
 func searchPaths(kind string) [][]string {

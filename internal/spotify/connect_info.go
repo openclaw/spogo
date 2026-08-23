@@ -15,7 +15,12 @@ func (c *ConnectClient) trackInfo(ctx context.Context, id string) (Item, error) 
 
 func (c *ConnectClient) albumInfo(ctx context.Context, id string) (Item, error) {
 	return c.infoWithWebFallback(ctx, id, "album", func() (Item, error) {
-		return c.infoByOperation(ctx, "getAlbum", map[string]any{"uri": "spotify:album:" + id}, "album")
+		return c.infoByOperation(ctx, "getAlbum", map[string]any{
+			"uri":    "spotify:album:" + id,
+			"locale": c.language,
+			"offset": 0,
+			"limit":  50,
+		}, "album")
 	}, func(web *Client) (Item, error) {
 		return web.GetAlbum(ctx, id)
 	})
@@ -48,9 +53,10 @@ func (c *ConnectClient) playlistInfo(ctx context.Context, id string) (Item, erro
 func (c *ConnectClient) showInfo(ctx context.Context, id string) (Item, error) {
 	return c.infoWithWebFallback(ctx, id, "show", func() (Item, error) {
 		return c.infoByOperation(ctx, "queryPodcastEpisodes", map[string]any{
-			"uri":    "spotify:show:" + id,
-			"offset": 0,
-			"limit":  25,
+			"uri":                            "spotify:show:" + id,
+			"offset":                         0,
+			"limit":                          25,
+			"includeEpisodeContentRatingsV2": false,
 		}, "show")
 	}, func(web *Client) (Item, error) {
 		return web.GetShow(ctx, id)
@@ -60,7 +66,8 @@ func (c *ConnectClient) showInfo(ctx context.Context, id string) (Item, error) {
 func (c *ConnectClient) episodeInfo(ctx context.Context, id string) (Item, error) {
 	return c.infoWithWebFallback(ctx, id, "episode", func() (Item, error) {
 		return c.infoByOperation(ctx, "getEpisodeOrChapter", map[string]any{
-			"uri": "spotify:episode:" + id,
+			"uri":                            "spotify:episode:" + id,
+			"includeEpisodeContentRatingsV2": false,
 		}, "episode")
 	}, func(web *Client) (Item, error) {
 		return web.GetEpisode(ctx, id)
@@ -80,7 +87,7 @@ func (c *ConnectClient) infoByOperation(ctx context.Context, operation string, v
 	if err != nil {
 		return Item{}, err
 	}
-	item, ok := extractItemFromPayload(payload, kind)
+	item, ok := extractRequestedItemFromPayload(payload, kind, getString(variables, "uri"))
 	if !ok {
 		return Item{}, fmt.Errorf("no %s found", kind)
 	}

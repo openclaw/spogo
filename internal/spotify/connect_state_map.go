@@ -1,6 +1,8 @@
 package spotify
 
 import (
+	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -83,7 +85,7 @@ func mapQueue(state connectState) Queue {
 	}
 	if next, ok := state.playerState["next_tracks"].([]any); ok {
 		for _, entry := range next {
-			if item, ok := extractItem(entry, "track"); ok {
+			if item, ok := extractConnectTrack(entry); ok {
 				queue.Queue = append(queue.Queue, item)
 			}
 		}
@@ -97,7 +99,7 @@ func extractPlaybackTrack(player map[string]any) Item {
 	}
 	for _, key := range []string{"track", "item", "current_track"} {
 		if raw, ok := player[key]; ok {
-			if item, ok := extractItem(raw, "track"); ok {
+			if item, ok := extractConnectTrack(raw); ok {
 				return item
 			}
 		}
@@ -113,4 +115,70 @@ func extractPlaybackTrack(player map[string]any) Item {
 		}
 	}
 	return Item{}
+}
+
+func extractConnectTrack(value any) (Item, bool) {
+	item, ok := extractItem(value, "track")
+	if !ok {
+		return Item{}, false
+	}
+	entry, ok := value.(map[string]any)
+	if !ok {
+		return item, true
+	}
+	metadata, ok := getMap(entry, "metadata")
+	if !ok {
+		metadata, ok = getMap(entry, "track", "metadata")
+	}
+	if !ok {
+		return item, true
+	}
+	if title := getString(metadata, "title"); title != "" {
+		item.Name = title
+	}
+	if artists := connectMetadataArtists(metadata); len(artists) > 0 {
+		item.Artists = artists
+	}
+	if album := getString(metadata, "album_title"); album != "" {
+		item.Album = album
+	}
+	if duration, err := strconv.Atoi(getString(metadata, "duration")); err == nil && duration >= 0 {
+		item.DurationMS = duration
+	}
+	if explicit, err := strconv.ParseBool(getString(metadata, "is_explicit")); err == nil {
+		item.Explicit = explicit
+		item.ExplicitKnown = true
+	}
+	return item, true
+}
+
+func connectMetadataArtists(metadata map[string]any) []string {
+	type indexedArtist struct {
+		index int
+		name  string
+	}
+	artists := make([]indexedArtist, 0)
+	for key, value := range metadata {
+		name, ok := value.(string)
+		if !ok || strings.TrimSpace(name) == "" {
+			continue
+		}
+		if key == "artist_name" {
+			artists = append(artists, indexedArtist{index: 0, name: name})
+			continue
+		}
+		suffix, ok := strings.CutPrefix(key, "artist_name:")
+		if !ok {
+			continue
+		}
+		if index, err := strconv.Atoi(suffix); err == nil && index > 0 {
+			artists = append(artists, indexedArtist{index: index, name: name})
+		}
+	}
+	sort.Slice(artists, func(i, j int) bool { return artists[i].index < artists[j].index })
+	names := make([]string, 0, len(artists))
+	for _, artist := range artists {
+		names = append(names, artist.name)
+	}
+	return dedupeStrings(names)
 }

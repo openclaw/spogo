@@ -261,7 +261,7 @@ func getConnectionID(ctx context.Context, accessToken string) (string, error) {
 		},
 	})
 	if err != nil {
-		return "", err
+		return "", redactedDealerError{err: err, accessToken: accessToken}
 	}
 	if resp != nil && resp.Body != nil {
 		defer func() { _ = resp.Body.Close() }()
@@ -290,4 +290,20 @@ func getConnectionID(ctx context.Context, accessToken string) (string, error) {
 		}
 	}
 	return "", errors.New("missing connection id")
+}
+
+type redactedDealerError struct {
+	err         error
+	accessToken string
+}
+
+func (e redactedDealerError) Error() string {
+	if e.accessToken == "" {
+		return e.err.Error()
+	}
+	return strings.ReplaceAll(e.err.Error(), e.accessToken, "[REDACTED]")
+}
+
+func (e redactedDealerError) Unwrap() error {
+	return e.err
 }
