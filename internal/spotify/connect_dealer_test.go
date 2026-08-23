@@ -3,6 +3,8 @@ package spotify
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -124,8 +126,20 @@ func TestGetConnectionIDDialError(t *testing.T) {
 	dealerURL = "ws://127.0.0.1:1"
 	t.Cleanup(func() { dealerURL = prev })
 
-	if _, err := getConnectionID(context.Background(), "token"); err == nil {
+	const accessToken = "sensitive-test-token"
+	_, err := getConnectionID(context.Background(), accessToken)
+	if err == nil {
 		t.Fatalf("expected error")
+	}
+	if strings.Contains(err.Error(), accessToken) {
+		t.Fatalf("dealer dial error exposed its access token")
+	}
+	if !strings.Contains(err.Error(), "[REDACTED]") {
+		t.Fatalf("dealer dial error omitted its redaction marker: %v", err)
+	}
+	var networkError net.Error
+	if !errors.As(err, &networkError) {
+		t.Fatalf("dealer dial error no longer unwraps to a network error: %T", err)
 	}
 }
 
