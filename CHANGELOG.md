@@ -14,6 +14,7 @@
 - Resolve artist, album, show, and episode metadata from the requested Spotify entity instead of unrelated nested content
 - Populate queue tracks from Spotify Connect metadata and concurrently hydrate incomplete entries without using the public Web API
 - Redact Spotify access tokens from Connect dealer WebSocket handshake errors
+- Bound the cookie-token HTTP client so `--timeout` applies to token fetches and a stalled endpoint cannot hang the process, thanks @SebTardif
 
 ## 0.10.3 - 2026-07-18
 
