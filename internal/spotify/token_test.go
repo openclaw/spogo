@@ -100,6 +100,16 @@ func TestCookieTokenProviderFallbackClientTimeout(t *testing.T) {
 	}
 }
 
+func TestCookieTokenProviderPreservesNegativeTimeout(t *testing.T) {
+	// NewClient and NewConnectClient default only a zero timeout.
+	// A configured negative duration must stay unlimited, not 10s.
+	want := -time.Second
+	client := newCookieTokenHTTPClient(nil, want)
+	if client.Timeout != want {
+		t.Fatalf("Timeout=%s want %s", client.Timeout, want)
+	}
+}
+
 func TestCookieTokenProviderHonorsConfiguredTimeout(t *testing.T) {
 	want := 1500 * time.Millisecond
 	client := newCookieTokenHTTPClient(nil, want)

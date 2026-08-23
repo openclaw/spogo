@@ -41,7 +41,7 @@ type tokenResponse struct {
 }
 
 func newCookieTokenHTTPClient(jar http.CookieJar, timeout time.Duration) *http.Client {
-	if timeout <= 0 {
+	if timeout == 0 {
 		timeout = defaultHTTPClientTimeout
 	}
 	return &http.Client{Jar: jar, Timeout: timeout}
