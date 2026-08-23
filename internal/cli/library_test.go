@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/steipete/spogo/internal/output"
@@ -226,6 +227,21 @@ func TestLibraryPlaylistsListCmd(t *testing.T) {
 	}
 	if out.String() == "" {
 		t.Fatalf("expected output")
+	}
+}
+
+func TestLibraryPlaylistsListCmdHumanOutput(t *testing.T) {
+	ctx, out, _ := testutil.NewTestContext(t, output.FormatHuman)
+	ctx.SetSpotify(&testutil.SpotifyMock{
+		PlaylistsFn: func(context.Context, int, int) ([]spotify.Item, int, error) {
+			return []spotify.Item{{ID: "p1", Name: "Discover Weekly", Type: "playlist", Owner: "Spotify"}}, 1, nil
+		},
+	})
+	if err := (&LibraryPlaylistsListCmd{Limit: 1}).Run(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if got := out.String(); !strings.Contains(got, "Discover Weekly — Spotify") {
+		t.Fatalf("expected non-empty human playlist output, got %q", got)
 	}
 }
 

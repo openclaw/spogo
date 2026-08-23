@@ -27,16 +27,18 @@ Talks to Spotify's internal Connect endpoints — the same ones the official des
 - Playback control (play, pause, next, prev, seek, volume, shuffle, repeat).
 - Device discovery and transfer.
 - Playlist mutations under heavy use (Connect doesn't hit the Web API rate limits).
-- Search and item info via the internal GraphQL surface.
+- Search and item info via the internal GraphQL surface, including episode lookup.
+- Listing followed artists, saved albums/tracks, and playlists; user top tracks and recently played history also use internal endpoints.
 
 **Tradeoffs**
 
-- A handful of features fall back to the Web API automatically (e.g. transfers when Connect has no origin device, volume on certain hardware that needs `PUT`).
-- Search/info uses GraphQL hashes; if a hash can't be resolved, falls back to web search.
+- Saving/removing library tracks or albums, following/unfollowing artists, creating playlists, and artist-top-track lookups used by artist playback still require the public Web API.
+- Transfers without a Connect origin device, some hardware volume/playback requests, and failed internal catalog/library lookups may also fall back to the public Web API.
+- These public-API paths can be rate-limited even with `--engine connect`; a `429` includes Spotify's `retry-after hint` whenever one is supplied.
 
 ## web
 
-The public Spotify Web API. Slower, lower throughput, and rate-limited (~180 req/min/account before backoff), but it works on accounts where Connect is unavailable.
+The public Spotify Web API. Slower, lower throughput, and rate-limited according to Spotify's account- and application-specific policies; cookie-derived tokens can encounter aggressive cooldowns, including retry hints measured in hours.
 
 **Best for**
 
@@ -46,18 +48,20 @@ The public Spotify Web API. Slower, lower throughput, and rate-limited (~180 req
 
 **Tradeoffs**
 
-- Rate limits will bite under bulk operations. If you see `429`, switch to `connect` or `auto`.
+- Rate limits can apply even without bulk operations. If you see `429`, prefer `connect` for supported reads and honor the reported `retry-after hint`; Web-API-only operations cannot bypass that cooldown by switching engines.
 - Search/info/playback auto-fall-back to Connect when rate limited, so practical behavior is closer to `auto`.
 
 ## auto
 
-Try `connect` first; fall back to `web` for unsupported features or when Connect signals the call won't work. The friendliest default if you're not sure.
+Try `connect` first, then fall back to `web` for unsupported features or rate limits. On macOS, playback status and controls get one final fallback to the already-local Spotify.app through AppleScript after both remote engines fail, including when cookies are missing.
 
 ```bash
 spogo --engine auto play spotify:playlist:...
 ```
 
 Most users don't need this — `connect` already falls back to web for the specific paths where it has to. `auto` is useful when you want **explicit** fallback behavior across all calls.
+
+The AppleScript last resort is limited to `status`, `play`, `pause`, `next`, `prev`, `seek`, `volume`, `shuffle`, and `repeat`. Search, catalog lookup, library operations, playlists, queue commands, and devices remain remote-only; explicit `--engine connect` and `--engine web` never use AppleScript.
 
 ## applescript (macOS only)
 
@@ -80,8 +84,7 @@ spogo --engine applescript status
 
 - macOS only.
 - No Connect device list (`device list` shows just the Mac), no transfers.
-- Search uses the Mac app's local search; results may differ from web search.
-- Library/playlist mutations are not supported via AppleScript — fall back to `connect` or `web` for those.
+- Search, catalog lookups, library, and playlists are not AppleScript operations; explicit `applescript` may delegate them to its configured remote fallback.
 
 ## Setting an engine
 

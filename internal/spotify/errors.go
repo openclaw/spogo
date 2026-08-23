@@ -88,3 +88,18 @@ func retryAfterFromResponse(resp *http.Response) time.Duration {
 	}
 	return delay
 }
+
+func preserveRateLimitHint(previous, current error) error {
+	if current == nil {
+		return nil
+	}
+	var currentAPIError APIError
+	if errors.As(current, &currentAPIError) && currentAPIError.Status == http.StatusTooManyRequests && currentAPIError.RetryAfter > 0 {
+		return current
+	}
+	var previousAPIError APIError
+	if errors.As(previous, &previousAPIError) && previousAPIError.Status == http.StatusTooManyRequests && previousAPIError.RetryAfter > 0 {
+		return previous
+	}
+	return current
+}

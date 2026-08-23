@@ -168,7 +168,7 @@ func (cmd *UserHistoryCmd) Run(ctx *app.Context) error {
 		"effective_lower_bound": after,
 	}
 	if ctx.Output.Format == output.FormatHuman {
-		header := fmt.Sprintf("Recently played (%s): %d", cmd.Period, len(allItems))
+		header := fmt.Sprintf("Recently played: %d", len(allItems))
 		human = append([]string{header}, human...)
 	}
 	return ctx.Output.Emit(payload, plain, human)
@@ -193,26 +193,26 @@ func parseRFC3339Milli(s string) (int64, error) {
 }
 
 func renderTopTracks(w *output.Writer, items []spotify.Item) (plain []string, human []string) {
-	accent := w.Theme.Accent
-	muted := w.Theme.Muted
 	plain = make([]string, 0, len(items))
 	human = make([]string, 0, len(items))
 	for i, item := range items {
 		rank := i + 1
 		plain = append(plain, fmt.Sprintf("%d\ttrack\t%s\t%s\t%s\t%s\t%s", rank, item.ID, item.Name, strings.Join(item.Artists, ", "), item.Album, item.URI))
-		human = append(human, fmt.Sprintf("%d. %s — %s %s", rank, accent(item.Name), strings.Join(item.Artists, ", "), muted("· "+item.Album)))
+		human = append(human, fmt.Sprintf("%d. %s", rank, humanItemLine(w, item.Name, strings.Join(item.Artists, ", "), item.Album)))
 	}
 	return plain, human
 }
 
 func renderRecentlyPlayed(w *output.Writer, items []spotify.RecentlyPlayedItem) (plain []string, human []string) {
-	accent := w.Theme.Accent
-	muted := w.Theme.Muted
 	plain = make([]string, 0, len(items))
 	human = make([]string, 0, len(items))
 	for _, item := range items {
 		plain = append(plain, fmt.Sprintf("%s\ttrack\t%s\t%s\t%s\t%s\t%s", item.PlayedAt, item.Track.ID, item.Track.Name, strings.Join(item.Track.Artists, ", "), item.Track.Album, item.Track.URI))
-		human = append(human, fmt.Sprintf("%s — %s %s", accent(item.Track.Name), strings.Join(item.Track.Artists, ", "), muted("· "+item.PlayedAt)))
+		playedAt := item.PlayedAt
+		if parsed, err := time.Parse(time.RFC3339Nano, playedAt); err == nil {
+			playedAt = parsed.Local().Format("Jan 2, 2006 at 3:04 PM MST")
+		}
+		human = append(human, humanItemLine(w, item.Track.Name, strings.Join(item.Track.Artists, ", "), playedAt))
 	}
 	return plain, human
 }

@@ -15,6 +15,13 @@ func TestConnectLibraryV3Helpers(t *testing.T) {
 		case "libraryV3":
 			query := req.URL.Query()
 			variables := query.Get("variables")
+			var decoded map[string]any
+			if err := json.Unmarshal([]byte(variables), &decoded); err != nil {
+				t.Fatalf("unmarshal libraryV3 variables: %v", err)
+			}
+			if features, ok := decoded["features"].([]any); !ok || len(features) != 0 {
+				t.Fatalf("libraryV3 must not request pseudo-playlists: %#v", decoded["features"])
+			}
 			switch {
 			case strings.Contains(variables, `"Playlists"`):
 				return jsonResponse(http.StatusOK, map[string]any{
@@ -35,6 +42,15 @@ func TestConnectLibraryV3Helpers(t *testing.T) {
 						"items": []any{map[string]any{"item": map[string]any{"data": map[string]any{
 							"uri":  "spotify:album:a1",
 							"name": "Album",
+						}}}},
+					}}},
+				}), nil
+			case strings.Contains(variables, `"Artists"`):
+				return jsonResponse(http.StatusOK, map[string]any{
+					"data": map[string]any{"me": map[string]any{"libraryV3": map[string]any{
+						"totalCount": 2,
+						"items": []any{map[string]any{"item": map[string]any{"data": map[string]any{
+							"uri": "spotify:artist:ar1", "profile": map[string]any{"name": "Artist"},
 						}}}},
 					}}},
 				}), nil
@@ -96,6 +112,53 @@ func TestConnectLibraryV3Helpers(t *testing.T) {
 	albums, total, err := client.libraryAlbums(context.Background(), 10, 0)
 	if err != nil || total != 1 || len(albums) != 1 || albums[0].ID != "a1" {
 		t.Fatalf("library albums: items=%#v total=%d err=%v", albums, total, err)
+	}
+	artists, total, next, err := client.FollowedArtists(context.Background(), 1, "")
+	if err != nil || total != 2 || len(artists) != 1 || artists[0].Name != "Artist" || next != "ar1" {
+		t.Fatalf("followed artists: items=%#v total=%d next=%q err=%v", artists, total, next, err)
+	}
+}
+
+func TestConnectFollowedArtistsCursorUsesLibraryV3(t *testing.T) {
+	requests := 0
+	transport := roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+		requests++
+		if req.URL.Query().Get("operationName") != "libraryV3" {
+			t.Fatalf("unexpected request %s", req.URL)
+		}
+		var vars map[string]any
+		if err := json.Unmarshal([]byte(req.URL.Query().Get("variables")), &vars); err != nil {
+			t.Fatal(err)
+		}
+		artists := []any{
+			map[string]any{"item": map[string]any{"data": map[string]any{"uri": "spotify:artist:a1", "profile": map[string]any{"name": "First"}}}},
+			map[string]any{"item": map[string]any{"data": map[string]any{"uri": "spotify:artist:a2", "profile": map[string]any{"name": "Second"}}}},
+			map[string]any{"item": map[string]any{"data": map[string]any{"uri": "spotify:artist:a3", "profile": map[string]any{"name": "Third"}}}},
+		}
+		offset := getInt(vars, "offset")
+		end := min(offset+getInt(vars, "limit"), len(artists))
+		return jsonResponse(http.StatusOK, map[string]any{"data": map[string]any{"me": map[string]any{"libraryV3": map[string]any{
+			"totalCount": len(artists), "items": artists[offset:end],
+		}}}}), nil
+	})
+	client := newConnectClientForTests(transport)
+	client.hashes.hashes["libraryV3"] = "hash"
+	items, total, next, err := client.FollowedArtists(context.Background(), 1, "a1")
+	if err != nil || total != 3 || len(items) != 1 || items[0].ID != "a2" || next != "a2" || requests != 2 {
+		t.Fatalf("items=%#v total=%d next=%q requests=%d err=%v", items, total, next, requests, err)
+	}
+}
+
+func TestConnectFollowedArtistCursorMissing(t *testing.T) {
+	transport := roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+		return jsonResponse(http.StatusOK, map[string]any{"data": map[string]any{"me": map[string]any{"libraryV3": map[string]any{
+			"totalCount": 1, "items": []any{map[string]any{"item": map[string]any{"data": map[string]any{"uri": "spotify:artist:a1", "profile": map[string]any{"name": "First"}}}}},
+		}}}}), nil
+	})
+	client := newConnectClientForTests(transport)
+	client.hashes.hashes["libraryV3"] = "hash"
+	if _, err := client.followedArtistOffset(context.Background(), "missing"); err == nil {
+		t.Fatal("expected missing cursor error")
 	}
 }
 

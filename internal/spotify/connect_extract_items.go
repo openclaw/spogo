@@ -2,6 +2,7 @@ package spotify
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -32,6 +33,15 @@ func extractItem(value any, kind string) (Item, bool) {
 	if !ok {
 		return Item{}, false
 	}
+	if data, ok := m["data"].(map[string]any); ok {
+		if uri := getString(m, "_uri"); uri != "" && getString(data, "uri") == "" {
+			data = copyEntityWithURI(data, uri)
+		}
+		m = data
+	}
+	if wrapped, ok := getMap(m, "item", "data"); ok {
+		m = wrapped
+	}
 	if kind == "track" {
 		if inner, ok := m["track"].(map[string]any); ok {
 			m = inner
@@ -59,6 +69,11 @@ func extractItem(value any, kind string) (Item, bool) {
 		name = getString(m, "title")
 	}
 	if name == "" {
+		if profile, ok := getMap(m, "profile"); ok {
+			name = getString(profile, "name")
+		}
+	}
+	if name == "" {
 		name = findFirstName(m)
 	}
 	item := Item{
@@ -76,6 +91,9 @@ func extractItem(value any, kind string) (Item, bool) {
 		if album := extractAlbumName(m); album != "" {
 			item.Album = album
 		}
+	}
+	if item.Type == "episode" {
+		item.Show = extractShowName(m)
 	}
 	if _, ok := m["explicit"]; ok {
 		item.Explicit = getBool(m, "explicit")
@@ -99,19 +117,80 @@ func extractItem(value any, kind string) (Item, bool) {
 		item.DurationMS = getNestedInt(m, "trackDuration", "totalMilliseconds")
 	}
 	item.Owner = extractOwnerName(m)
-	item.TotalTracks = getInt(m, "totalTracks")
-	if item.TotalTracks == 0 {
-		item.TotalTracks = getInt(m, "total")
-	}
-	item.ReleaseDate = getString(m, "releaseDate")
+	item.TotalTracks = firstPositiveInt(
+		getInt(m, "totalTracks"),
+		getInt(m, "total_tracks"),
+		getNestedInt(m, "tracks", "totalCount"),
+		getNestedInt(m, "tracks", "total"),
+		getNestedInt(m, "tracksV2", "totalCount"),
+		getNestedInt(m, "content", "totalCount"),
+		getInt(m, "total"),
+	)
+	item.ReleaseDate = extractReleaseDate(m)
 	item.Description = getString(m, "description")
 	item.IsPlayable = getBool(m, "isPlayable")
 	if !item.IsPlayable {
 		item.IsPlayable = getNestedBool(m, "playability", "playable")
 	}
 	item.Publisher = getString(m, "publisher")
-	item.TotalEpisodes = getInt(m, "totalEpisodes")
+	if item.Publisher == "" {
+		if publisher, ok := getMap(m, "publisher"); ok {
+			item.Publisher = getString(publisher, "name")
+		}
+	}
+	item.TotalEpisodes = firstPositiveInt(
+		getInt(m, "totalEpisodes"),
+		getInt(m, "total_episodes"),
+		getNestedInt(m, "episodes", "totalCount"),
+		getNestedInt(m, "episodesV2", "totalCount"),
+	)
+	item.Followers = firstPositiveInt(
+		getInt(m, "followers"),
+		getNestedInt(m, "stats", "followers"),
+		getNestedInt(m, "followers", "total"),
+	)
 	return item, true
+}
+
+func copyEntityWithURI(entity map[string]any, uri string) map[string]any {
+	copy := make(map[string]any, len(entity)+1)
+	for key, value := range entity {
+		copy[key] = value
+	}
+	copy["uri"] = uri
+	return copy
+}
+
+func firstPositiveInt(values ...int) int {
+	for _, value := range values {
+		if value > 0 {
+			return value
+		}
+	}
+	return 0
+}
+
+func extractReleaseDate(entity map[string]any) string {
+	if date := getString(entity, "release_date"); date != "" {
+		return date
+	}
+	if date := getString(entity, "releaseDate"); date != "" {
+		return date
+	}
+	for _, key := range []string{"releaseDate", "date"} {
+		date, ok := getMap(entity, key)
+		if !ok {
+			continue
+		}
+		if value := getString(date, "isoString"); value != "" {
+			value, _, _ = strings.Cut(value, "T")
+			return value
+		}
+		if year := getInt(date, "year"); year > 0 {
+			return strconv.Itoa(year)
+		}
+	}
+	return ""
 }
 
 func idFromURI(uri string) string {

@@ -72,7 +72,11 @@ func (c *Context) newAutoClient(source cookies.Source) (spotify.API, error) {
 	}
 	client := spotify.API(webClient)
 	if connectClient, connectErr := c.newConnectClient(source); connectErr == nil {
-		client = spotify.NewAutoClient(connectClient, webClient)
+		if localClient, localErr := spotify.NewAppleScriptClient(spotify.AppleScriptOptions{}); localErr == nil {
+			client = spotify.NewAutoClient(connectClient, webClient, localClient)
+		} else {
+			client = spotify.NewAutoClient(connectClient, webClient)
+		}
 	}
 	return client, nil
 }

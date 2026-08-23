@@ -15,7 +15,7 @@ A script-friendly CLI must guarantee:
 - **Stable exit codes.** `0` success, `1` generic, `2` usage, `3` auth, `4` network. Branch on these.
 - **stdout is data.** stderr carries everything else. Pipes always work.
 - **No interactive surprises.** When stdin is not a TTY, spogo refuses to prompt. Pass `--no-input` to be explicit.
-- **No tight rate limits.** Cookie auth via Connect avoids the public Web API throttle.
+- **Fewer public-API requests.** Connect uses internal endpoints for supported reads and playback; library mutations, playlist creation, and other Web-API-only paths can still return `429` with a retry hint.
 
 See [Output](output.md) for the full contract.
 

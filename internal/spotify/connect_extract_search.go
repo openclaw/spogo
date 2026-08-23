@@ -91,10 +91,6 @@ func extractRequestedEntity(entity map[string]any, kind, requestedURI string) (I
 		return Item{}, false
 	}
 	if kind == "artist" {
-		item.Followers = getNestedInt(entity, "stats", "followers")
-		if item.Followers == 0 {
-			item.Followers = getNestedInt(entity, "followers", "total")
-		}
 		item.Genres = extractEntityGenres(entity)
 	}
 	return item, true

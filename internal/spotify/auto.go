@@ -9,10 +9,15 @@ import (
 type autoClient struct {
 	primary   API
 	secondary API
+	local     API
 }
 
-func NewAutoClient(connect API, web API) API {
-	return &autoClient{primary: connect, secondary: web}
+func NewAutoClient(connect API, web API, local ...API) API {
+	client := &autoClient{primary: connect, secondary: web}
+	if len(local) > 0 {
+		client.local = local[0]
+	}
+	return client
 }
 
 func (c *autoClient) shouldFallback(err error) bool {
@@ -28,7 +33,8 @@ func autoCall[T any](c *autoClient, fn func(API) (T, error)) (T, error) {
 	if err == nil || c.secondary == nil || !c.shouldFallback(err) {
 		return res, err
 	}
-	return fn(c.secondary)
+	fallback, fallbackErr := fn(c.secondary)
+	return fallback, preserveRateLimitHint(err, fallbackErr)
 }
 
 func autoVoid(c *autoClient, fn func(API) error) error {
@@ -36,7 +42,7 @@ func autoVoid(c *autoClient, fn func(API) error) error {
 	if err == nil || c.secondary == nil || !c.shouldFallback(err) {
 		return err
 	}
-	return fn(c.secondary)
+	return preserveRateLimitHint(err, fn(c.secondary))
 }
 
 func autoCall2[A, B any](c *autoClient, fn func(API) (A, B, error)) (A, B, error) {
@@ -44,7 +50,8 @@ func autoCall2[A, B any](c *autoClient, fn func(API) (A, B, error)) (A, B, error
 	if err == nil || c.secondary == nil || !c.shouldFallback(err) {
 		return a, b, err
 	}
-	return fn(c.secondary)
+	a, b, fallbackErr := fn(c.secondary)
+	return a, b, preserveRateLimitHint(err, fallbackErr)
 }
 
 func autoCall3[A, B, C any](c *autoClient, fn func(API) (A, B, C, error)) (A, B, C, error) {
@@ -52,7 +59,46 @@ func autoCall3[A, B, C any](c *autoClient, fn func(API) (A, B, C, error)) (A, B,
 	if err == nil || c.secondary == nil || !c.shouldFallback(err) {
 		return a, b, cval, err
 	}
-	return fn(c.secondary)
+	a, b, cval, fallbackErr := fn(c.secondary)
+	return a, b, cval, preserveRateLimitHint(err, fallbackErr)
+}
+
+func autoPlaybackCall[T any](c *autoClient, fn func(API) (T, error)) (T, error) {
+	result, err := fn(c.primary)
+	if err == nil {
+		return result, nil
+	}
+	if c.secondary != nil && (c.local != nil || c.shouldFallback(err)) {
+		fallback, fallbackErr := fn(c.secondary)
+		if fallbackErr == nil {
+			return fallback, nil
+		}
+		result = fallback
+		err = preserveRateLimitHint(err, fallbackErr)
+	}
+	if c.local == nil {
+		return result, err
+	}
+	local, localErr := fn(c.local)
+	return local, preserveRateLimitHint(err, localErr)
+}
+
+func autoPlaybackVoid(c *autoClient, fn func(API) error) error {
+	err := fn(c.primary)
+	if err == nil {
+		return nil
+	}
+	if c.secondary != nil && (c.local != nil || c.shouldFallback(err)) {
+		fallbackErr := fn(c.secondary)
+		if fallbackErr == nil {
+			return nil
+		}
+		err = preserveRateLimitHint(err, fallbackErr)
+	}
+	if c.local == nil {
+		return err
+	}
+	return preserveRateLimitHint(err, fn(c.local))
 }
 
 func (c *autoClient) Search(ctx context.Context, kind, query string, limit, offset int) (SearchResult, error) {
@@ -111,55 +157,55 @@ func (c *autoClient) GetEpisode(ctx context.Context, id string) (Item, error) {
 }
 
 func (c *autoClient) Playback(ctx context.Context) (PlaybackStatus, error) {
-	return autoCall(c, func(api API) (PlaybackStatus, error) {
+	return autoPlaybackCall(c, func(api API) (PlaybackStatus, error) {
 		return api.Playback(ctx)
 	})
 }
 
 func (c *autoClient) Play(ctx context.Context, uri string) error {
-	return autoVoid(c, func(api API) error {
+	return autoPlaybackVoid(c, func(api API) error {
 		return api.Play(ctx, uri)
 	})
 }
 
 func (c *autoClient) Pause(ctx context.Context) error {
-	return autoVoid(c, func(api API) error {
+	return autoPlaybackVoid(c, func(api API) error {
 		return api.Pause(ctx)
 	})
 }
 
 func (c *autoClient) Next(ctx context.Context) error {
-	return autoVoid(c, func(api API) error {
+	return autoPlaybackVoid(c, func(api API) error {
 		return api.Next(ctx)
 	})
 }
 
 func (c *autoClient) Previous(ctx context.Context) error {
-	return autoVoid(c, func(api API) error {
+	return autoPlaybackVoid(c, func(api API) error {
 		return api.Previous(ctx)
 	})
 }
 
 func (c *autoClient) Seek(ctx context.Context, positionMS int) error {
-	return autoVoid(c, func(api API) error {
+	return autoPlaybackVoid(c, func(api API) error {
 		return api.Seek(ctx, positionMS)
 	})
 }
 
 func (c *autoClient) Volume(ctx context.Context, volume int) error {
-	return autoVoid(c, func(api API) error {
+	return autoPlaybackVoid(c, func(api API) error {
 		return api.Volume(ctx, volume)
 	})
 }
 
 func (c *autoClient) Shuffle(ctx context.Context, enabled bool) error {
-	return autoVoid(c, func(api API) error {
+	return autoPlaybackVoid(c, func(api API) error {
 		return api.Shuffle(ctx, enabled)
 	})
 }
 
 func (c *autoClient) Repeat(ctx context.Context, mode string) error {
-	return autoVoid(c, func(api API) error {
+	return autoPlaybackVoid(c, func(api API) error {
 		return api.Repeat(ctx, mode)
 	})
 }

@@ -11,9 +11,9 @@ A single Go binary for Spotify on the command line. Search the catalog, drive pl
 ## Why spogo
 
 - **No app registration.** spogo authenticates with the cookies your browser already has — `spogo auth import --browser chrome` and you're authenticated. No client ID, no redirect URI, no developer dashboard.
-- **No tight rate limits.** Talks to Spotify's internal web endpoints (the same ones `open.spotify.com` uses), so search, info, and playback are usable for automation that the public Web API would throttle.
+- **Internal endpoints where available.** Search, catalog info, library listing, listening history, and most playback use the same internal endpoints as `open.spotify.com`; library mutations, playlist creation, and other Web-API-only operations can still be rate-limited.
 - **Predictable output.** `--json` for tools, `--plain` for `awk`/`cut`, color human output by default. `NO_COLOR`, `TERM=dumb`, and `--no-color` all respected.
-- **Multiple engines.** `connect` (internal), `web` (public Web API), `auto` (connect first, fall back to web), and `applescript` (drive Spotify.app on macOS) — pick what works.
+- **Multiple engines.** `connect` (internal), `web` (public Web API), `auto` (connect → web → local Spotify.app for playback on macOS), and `applescript` (drive Spotify.app on macOS) — pick what works.
 - **Built for agents.** Stable exit codes, structured errors, machine output — drop spogo into a shell script or hand it to a coding agent and it'll behave.
 
 ## Pick your path

@@ -167,6 +167,27 @@ func TestUserHistoryCmd(t *testing.T) {
 	}
 }
 
+func TestUserHistoryHumanOutputUsesReadableTimestampWithoutAffinityRange(t *testing.T) {
+	ctx, out, _ := testutil.NewTestContext(t, output.FormatHuman)
+	ctx.SetSpotify(&testutil.SpotifyMock{
+		GetRecentlyPlayedFn: func(context.Context, int, int64, int64) (spotify.RecentlyPlayedResult, error) {
+			return spotify.RecentlyPlayedResult{Items: []spotify.RecentlyPlayedItem{{
+				Track: spotify.Item{Name: "Long Way Home", Type: "track", Artists: []string{"Gareth Emery"}}, PlayedAt: "2026-08-23T22:20:10.967Z",
+			}}}, nil
+		},
+	})
+	if err := (&UserHistoryCmd{Period: "long_term", Limit: 1}).Run(ctx); err != nil {
+		t.Fatal(err)
+	}
+	got := out.String()
+	if !strings.HasPrefix(got, "Recently played: 1\nLong Way Home — Gareth Emery · ") {
+		t.Fatalf("unexpected history output %q", got)
+	}
+	if strings.Contains(got, "long_term") || strings.Contains(got, "2026-08-23T22:20:10.967Z") || !strings.Contains(got, "Aug 23, 2026") {
+		t.Fatalf("history output was not formatted for humans: %q", got)
+	}
+}
+
 func TestUserHistoryCmdWithPeriod(t *testing.T) {
 	ctx, _, _ := testutil.NewTestContext(t, output.FormatPlain)
 	mock := &testutil.SpotifyMock{

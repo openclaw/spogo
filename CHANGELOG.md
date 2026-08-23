@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Fixed
+
+- Populate artists, release dates, owners, publishers, show names, durations, track/episode counts, and follower counts across Spotify catalog results
+- Render readable follower counts and listening timestamps while omitting unknown metadata, empty separators, false zero counts, and trailing device whitespace
+- List real library playlists immediately and fetch followed artists through Spotify's internal web-player API instead of rate-limited public endpoints
+- Preserve Spotify retry-after cooldown hints across failed engine fallbacks and document commands that still require the public Web API
+- Share the configured default HTTP timeout across Spotify Connect clients
+
+### Added
+
+- Fall back to the local Spotify.app for playback status and controls on macOS after both remote auto engines fail
+
 ## 0.10.5 - 2026-08-23
 
 ### Fixed

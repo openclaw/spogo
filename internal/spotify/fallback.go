@@ -29,7 +29,8 @@ func fallbackCall[T any](c *fallbackClient, allow bool, fn func(API) (T, error))
 	if err == nil || !allow || c.connect == nil || !c.shouldFallback(err) {
 		return res, err
 	}
-	return fn(c.connect)
+	fallback, fallbackErr := fn(c.connect)
+	return fallback, preserveRateLimitHint(err, fallbackErr)
 }
 
 func fallbackVoid(c *fallbackClient, allow bool, fn func(API) error) error {
@@ -37,7 +38,7 @@ func fallbackVoid(c *fallbackClient, allow bool, fn func(API) error) error {
 	if err == nil || !allow || c.connect == nil || !c.shouldFallback(err) {
 		return err
 	}
-	return fn(c.connect)
+	return preserveRateLimitHint(err, fn(c.connect))
 }
 
 func (c *fallbackClient) Search(ctx context.Context, kind, query string, limit, offset int) (SearchResult, error) {
@@ -56,7 +57,8 @@ func (c *fallbackClient) ArtistTopTracks(ctx context.Context, id string, limit i
 		return items, err
 	}
 	if connect, ok := c.connect.(artistTopTracksAPI); ok {
-		return connect.ArtistTopTracks(ctx, id, limit)
+		fallback, fallbackErr := connect.ArtistTopTracks(ctx, id, limit)
+		return fallback, preserveRateLimitHint(err, fallbackErr)
 	}
 	return items, err
 }

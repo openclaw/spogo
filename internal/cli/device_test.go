@@ -69,6 +69,24 @@ func TestDeviceListCmd(t *testing.T) {
 	}
 }
 
+func TestDeviceListHumanOmitsTrailingSpace(t *testing.T) {
+	ctx, out, _ := testutil.NewTestContext(t, output.FormatHuman)
+	ctx.SetSpotify(&testutil.SpotifyMock{
+		DevicesFn: func(context.Context) ([]spotify.Device, error) {
+			return []spotify.Device{
+				{ID: "d1", Name: "Schlafzimmer", Type: "SPEAKER"},
+				{ID: "d2", Name: "Desk", Type: "COMPUTER", Active: true},
+			}, nil
+		},
+	})
+	if err := (&DeviceListCmd{}).Run(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := out.String(), "Schlafzimmer (SPEAKER)\nDesk (COMPUTER) (active)\n"; got != want {
+		t.Fatalf("output=%q want=%q", got, want)
+	}
+}
+
 func TestDeviceListCmdError(t *testing.T) {
 	ctx, _, _ := testutil.NewTestContext(t, output.FormatPlain)
 	mock := &testutil.SpotifyMock{

@@ -41,6 +41,8 @@ spogo library artists unfollow <id|url...>
 
 `--after` paginates by artist ID — pass the last ID from the previous page to fetch the next.
 
+Listing followed artists uses Spotify's internal web-player library operation. Following or unfollowing an artist still uses the public Web API and may return a rate-limit cooldown.
+
 ## library playlists
 
 ```bash
@@ -48,6 +50,8 @@ spogo library playlists list [--limit N]
 ```
 
 Lists every playlist you own or follow. To list **tracks** in a playlist, use `playlist tracks` below.
+
+Playlist and library collection listings use the internal web-player API. Saving/removing tracks or albums and creating playlists still require the public Web API, so those mutations may be rate-limited.
 
 ## playlist create
 

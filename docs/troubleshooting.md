@@ -94,9 +94,11 @@ Older spogo versions had Connect responses missing artist/album for some track s
 
 ### `429 too many requests`
 
-Should not happen on the `connect` engine for normal usage. If you see it:
+Spotify's public Web API can rate-limit cookie-derived tokens aggressively, even when a command starts on the `connect` engine. If you see it:
 
-- You're on `--engine web` — switch to `connect` or `auto`.
+- You're on `--engine web` — switch to `connect` or `auto` when the command has an internal equivalent.
+- Saving/removing library tracks or albums, following/unfollowing artists, playlist creation, artist-top-track lookups, and some device/playback fallbacks still require the public API; changing engines cannot bypass their cooldown.
+- Respect the `retry-after hint` printed with the error. Spotify can advertise cooldowns lasting hours or longer.
 - You're hammering the API in a tight loop — add `sleep 0.2` between calls, or batch via `--limit`.
 - Multiple spogo profiles are sharing the same Spotify account at the same time — the throttle is per-account, not per-process.
 
