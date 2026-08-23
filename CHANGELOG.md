@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- Show the album in `spogo status` human output, omitting it when it only repeats the track name
+
 ## 0.10.6 - 2026-08-23
 
 ### Fixed

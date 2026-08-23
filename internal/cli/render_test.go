@@ -96,6 +96,50 @@ func TestPlaybackHumanOmitsUnknownFields(t *testing.T) {
 	}
 }
 
+func TestPlaybackHumanShowsAlbum(t *testing.T) {
+	ctx, _, _ := testutil.NewTestContext(t, output.FormatHuman)
+	tests := []struct {
+		name   string
+		status spotify.PlaybackStatus
+		want   string
+	}{
+		{
+			name: "album and device",
+			status: spotify.PlaybackStatus{
+				IsPlaying: true,
+				Item:      &spotify.Item{Name: "Yesterday", Artists: []string{"Gareth Emery", "NASH"}, Album: "Lasers"},
+				Device:    spotify.Device{Name: "steipete-studio-sf"},
+			},
+			want: "PLAYING Yesterday — Gareth Emery, NASH · Lasers · steipete-studio-sf",
+		},
+		{
+			name: "single repeats its own name as the album",
+			status: spotify.PlaybackStatus{
+				IsPlaying: true,
+				Item:      &spotify.Item{Name: "Yesterday", Artists: []string{"Gareth Emery"}, Album: "yesterday"},
+				Device:    spotify.Device{Name: "steipete-studio-sf"},
+			},
+			want: "PLAYING Yesterday — Gareth Emery · steipete-studio-sf",
+		},
+		{
+			name: "unknown album",
+			status: spotify.PlaybackStatus{
+				IsPlaying: true,
+				Item:      &spotify.Item{Name: "Yesterday", Artists: []string{"Gareth Emery"}},
+				Device:    spotify.Device{Name: "steipete-studio-sf"},
+			},
+			want: "PLAYING Yesterday — Gareth Emery · steipete-studio-sf",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := playbackHuman(ctx.Output, tt.status); got != tt.want {
+				t.Fatalf("playback=%q want=%q", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestItemPlainPreservesUnknownFieldPositions(t *testing.T) {
 	tests := []struct {
 		item spotify.Item

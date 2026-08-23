@@ -116,7 +116,7 @@ Drive what's playing. See [Playback](playback.md).
 | `spogo volume <0-100>` | Set device volume. |
 | `spogo shuffle <on|off>` | Toggle shuffle. |
 | `spogo repeat <off|track|context>` | Set repeat mode. |
-| `spogo status` | Print currently playing item + device. |
+| `spogo status` | Print currently playing item, album, and device. |
 
 ## queue
 

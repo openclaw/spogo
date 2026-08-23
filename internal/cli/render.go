@@ -146,7 +146,12 @@ func playbackHuman(w *output.Writer, status spotify.PlaybackStatus) string {
 	}
 	line := w.Theme.Accent(strings.ToUpper(state))
 	if status.Item != nil && status.Item.Name != "" {
-		line += " " + humanItemLine(w, status.Item.Name, strings.Join(status.Item.Artists, ", "))
+		// Singles repeat the track name as the album title, so skip the duplicate.
+		album := status.Item.Album
+		if strings.EqualFold(album, status.Item.Name) {
+			album = ""
+		}
+		line += " " + humanItemLine(w, status.Item.Name, strings.Join(status.Item.Artists, ", "), album)
 	}
 	if status.Device.Name != "" {
 		line += " " + w.Theme.Muted("· "+status.Device.Name)
