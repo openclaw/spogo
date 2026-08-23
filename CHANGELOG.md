@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- Honor the configured request timeout when opening Spotify Connect dealer WebSocket connections
+
 ## 0.10.4 - 2026-08-23
 
 ### Highlights
