@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+const defaultHTTPClientTimeout = 10 * time.Second
+
 type Options struct {
 	TokenProvider TokenProvider
 	HTTPClient    *http.Client
@@ -44,7 +46,7 @@ func NewClient(opts Options) (*Client, error) {
 	if client == nil {
 		timeout := opts.Timeout
 		if timeout == 0 {
-			timeout = 10 * time.Second
+			timeout = defaultHTTPClientTimeout
 		}
 		client = &http.Client{Timeout: timeout}
 	}

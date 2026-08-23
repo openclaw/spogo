@@ -101,7 +101,7 @@ func (c *Context) newConnectClient(source cookies.Source) (*spotify.ConnectClien
 
 func (c *Context) newWebClient(source cookies.Source) (*spotify.Client, error) {
 	return spotify.NewClient(spotify.Options{
-		TokenProvider: spotify.CookieTokenProvider{Source: source},
+		TokenProvider: spotify.CookieTokenProvider{Source: source, Timeout: c.Settings.Timeout},
 		Market:        c.Profile.Market,
 		Language:      c.Profile.Language,
 		Device:        c.Profile.Device,
