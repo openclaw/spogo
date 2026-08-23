@@ -27,6 +27,9 @@ type connectCache struct {
 	ConnectVersion         string `json:"connect_version,omitempty"`
 	DeviceID               string `json:"device_id,omitempty"`
 	ConnectDeviceID        string `json:"connect_device_id,omitempty"`
+	// GraphQL operation hashes belong to the web-player client build.
+	OperationHashesClientVersion string            `json:"operation_hashes_client_version,omitempty"`
+	OperationHashes              map[string]string `json:"operation_hashes,omitempty"`
 
 	ActiveDeviceID string `json:"active_device_id,omitempty"`
 	OriginDeviceID string `json:"origin_device_id,omitempty"`

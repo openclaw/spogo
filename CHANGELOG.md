@@ -1,6 +1,19 @@
 # Changelog
 
-## Unreleased
+## 0.10.4 - 2026-08-23
+
+### Highlights
+
+- Cache Spotify Connect GraphQL operation hashes on disk, so catalog commands answer in seconds instead of re-downloading the web-player bundle on every run
+- Return the entity you actually asked for from `artist info`, `album info`, `show info`, and `episode info`
+- Show real titles, artists, albums, and durations for every `queue show` entry
+
+### Fixed
+
+- Persist Spotify Connect GraphQL operation hashes by web-player build and resolve missing bundle chunks concurrently
+- Resolve artist, album, show, and episode metadata from the requested Spotify entity instead of unrelated nested content
+- Populate queue tracks from Spotify Connect metadata and concurrently hydrate incomplete entries without using the public Web API
+- Redact Spotify access tokens from Connect dealer WebSocket handshake errors
 
 ## 0.10.3 - 2026-07-18
 

@@ -1,6 +1,9 @@
 package spotify
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 func TestParseMapLiteral(t *testing.T) {
 	raw := `{1:"foo",2:"bar"}`
@@ -49,5 +52,32 @@ func TestScoreMapsEmpty(t *testing.T) {
 	}
 	if scoreNameMap(nil) != 0 {
 		t.Fatalf("expected 0 for empty name map")
+	}
+}
+
+func TestPrioritizeOperationChunks(t *testing.T) {
+	tests := []struct {
+		name       string
+		operations []string
+		want       []string
+	}{
+		{
+			name:       "search route before incidental search chunks",
+			operations: []string{"searchDesktop"},
+			want:       []string{"xpui-routes-search.abc.js", "xpui-routes-recent-searches.def.js", "xpui-routes-album.ghi.js", "xpui-home.jkl.js"},
+		},
+		{
+			name:       "album route before unrelated chunks",
+			operations: []string{"getAlbum"},
+			want:       []string{"xpui-routes-album.ghi.js", "xpui-routes-recent-searches.def.js", "xpui-home.jkl.js", "xpui-routes-search.abc.js"},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			chunks := []string{"xpui-routes-recent-searches.def.js", "xpui-routes-album.ghi.js", "xpui-home.jkl.js", "xpui-routes-search.abc.js"}
+			if got := prioritizeOperationChunks(chunks, test.operations); !reflect.DeepEqual(got, test.want) {
+				t.Fatalf("prioritized chunks = %#v, want %#v", got, test.want)
+			}
+		})
 	}
 }

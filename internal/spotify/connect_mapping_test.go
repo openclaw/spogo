@@ -2,6 +2,7 @@ package spotify
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 )
 
@@ -546,5 +547,94 @@ func TestHelperNilAndOwnerFallback(t *testing.T) {
 	items := extractItemsFromContainer(container, "track")
 	if len(items) == 0 || items[0].ID != "q1" {
 		t.Fatalf("unexpected items: %#v", items)
+	}
+}
+
+func TestExtractRequestedItemFromPayloadMatchesRequestedEntity(t *testing.T) {
+	tests := []struct {
+		name      string
+		kind      string
+		key       string
+		entity    map[string]any
+		wantName  string
+		followers int
+		genres    []string
+	}{
+		{
+			name: "artist profile wins over related playlist",
+			kind: "artist",
+			key:  "artistUnion",
+			entity: map[string]any{
+				"uri":     "spotify:artist:target",
+				"profile": map[string]any{"name": "Weezer"},
+				"stats":   map[string]any{"followers": float64(123456)},
+				"genres":  map[string]any{"items": []any{map[string]any{"name": "alternative rock"}, map[string]any{"name": "power pop"}}},
+				"relatedContent": map[string]any{
+					"playlist": map[string]any{"name": "Weezer, The Shins, Silversun Pickups"},
+				},
+			},
+			wantName:  "Weezer",
+			followers: 123456,
+			genres:    []string{"alternative rock", "power pop"},
+		},
+		{
+			name:     "album union ignores nested artist album",
+			kind:     "album",
+			key:      "albumUnion",
+			entity:   map[string]any{"uri": "spotify:album:target", "name": "Target Album"},
+			wantName: "Target Album",
+		},
+		{
+			name:     "podcast union ignores related show",
+			kind:     "show",
+			key:      "podcastUnionV2",
+			entity:   map[string]any{"uri": "spotify:show:target", "name": "Target Show"},
+			wantName: "Target Show",
+		},
+		{
+			name:     "episode union ignores related episode",
+			kind:     "episode",
+			key:      "episodeUnionV2",
+			entity:   map[string]any{"uri": "spotify:episode:target", "name": "Target Episode"},
+			wantName: "Target Episode",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			payload := map[string]any{"data": map[string]any{
+				"related": map[string]any{
+					"uri":  "spotify:" + test.kind + ":other",
+					"name": "Unrelated " + test.kind,
+				},
+				test.key: test.entity,
+			}}
+			item, ok := extractRequestedItemFromPayload(payload, test.kind, "spotify:"+test.kind+":target")
+			if !ok {
+				t.Fatal("expected requested entity")
+			}
+			if item.ID != "target" || item.Name != test.wantName || item.Followers != test.followers || !reflect.DeepEqual(item.Genres, test.genres) {
+				t.Fatalf("unexpected requested entity: %#v", item)
+			}
+		})
+	}
+}
+
+func TestExtractRequestedItemFromPayloadRejectsDifferentEntity(t *testing.T) {
+	payload := map[string]any{"data": map[string]any{"artistUnion": map[string]any{
+		"uri":     "spotify:artist:other",
+		"profile": map[string]any{"name": "Other Artist"},
+	}}}
+	if item, ok := extractRequestedItemFromPayload(payload, "artist", "spotify:artist:target"); ok {
+		t.Fatalf("returned unrelated artist: %#v", item)
+	}
+}
+
+func TestExtractRequestedItemFromPayloadFindsNestedMatchingEntity(t *testing.T) {
+	payload := map[string]any{"data": map[string]any{"unexpectedContainer": map[string]any{
+		"entity": map[string]any{"uri": "spotify:show:target", "name": "Nested Show"},
+	}}}
+	item, ok := extractRequestedItemFromPayload(payload, "show", "spotify:show:target")
+	if !ok || item.Name != "Nested Show" {
+		t.Fatalf("unexpected fallback entity: %#v, found=%t", item, ok)
 	}
 }
