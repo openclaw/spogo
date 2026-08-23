@@ -19,18 +19,20 @@ Product direction and compatibility policy: [VISION.md](VISION.md).
 - Browser cookie import via `sweetcookie`
 - `--json` and `--plain` for scripting
 - Colorized human output (respects `NO_COLOR`, `TERM=dumb`, `--no-color`)
-- Engine switch: `auto` (connect → web), `connect` (internal endpoints), `web` (Web API endpoints; search/info/playback fall back to connect on rate limit)
+- Engine switch: `auto` (connect → web → local Spotify.app for playback on macOS), `connect` (internal endpoints), `web` (Web API endpoints; search/info/playback fall back to connect on rate limit)
 
 ## Why Cookies?
 
-Spotify's official API has strict rate limits that make it impractical for agents and automation. By using browser cookies to authenticate with Spotify's internal web API (the same one their web player uses), spogo bypasses these limitations:
+Spotify's official Web API has strict rate limits that can make it impractical for agents and automation. Browser cookies let spogo use the same internal endpoints as the Spotify web player for catalog search, item lookup, library listing, listening history, and most playback and playlist operations:
 
-- **No rate limits** - Use the same endpoints as open.spotify.com
+- **Fewer public-API rate limits** - Most reads and playback use the same internal endpoints as open.spotify.com
 - **No app registration** - No need to create a Spotify Developer app
 - **Full functionality** - Access to everything the web player can do
 - **Agent-friendly** - Perfect for AI assistants and automation scripts
 
 Import your cookies once with `sweetcookie` and you're good to go (defaults to Chrome).
+
+Some operations still require Spotify's public Web API: saving/removing library tracks or albums, following/unfollowing artists, creating playlists, artist-top-track lookups used by artist playback, and certain device transfers or playback fallbacks. Explicit `--engine web` also uses the public API. These paths can return `429`; when Spotify supplies a cooldown, spogo reports its `retry-after hint`, which can be several hours.
 
 ## Install
 
@@ -127,12 +129,13 @@ printf '%s\n%s\n' "sp_dc=..." "sp_t=..." | spogo auth paste --no-input
 ## Auto engine notes
 
 - `auto` tries connect first, then falls back to web on unsupported features or rate limits.
+- On macOS, playback status and playback controls try the local Spotify.app through AppleScript only after both remote engines fail, including when cookies are unavailable. Search, library, playlists, queues, and devices never use this local fallback.
 
 ## Connect engine notes
 
 - `connect` uses Spotify's internal connect-state endpoints for playback control.
 - Auth/session data and the last active playback route are cached per profile so repeated playback commands avoid a full Connect state refresh when the route is still valid.
-- Search/info prefer the internal GraphQL API and fall back to web search if hashes can’t be resolved.
+- Search/info, followed artists, saved albums/tracks, playlists, top tracks, and recent listening history prefer internal endpoints; catalog lookups fall back to the Web API if their internal operation cannot be resolved.
 
 ## Web engine notes
 

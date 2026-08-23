@@ -142,7 +142,7 @@ spogo [global flags] <command> [args]
 
 ## Engines
 
-- `auto`: connect first; fall back to web for unsupported features or rate limits.
+- `auto`: connect first; fall back to web for unsupported features or rate limits; on macOS, playback status/control can finally fall back to Spotify.app through AppleScript after both remote engines fail.
 - `connect`: internal connect-state endpoints for playback; GraphQL for search/info. Auth/session data and the last active playback route are cached per profile.
 - `web`: Web API endpoints; search/info/playback auto-fallback to connect when rate limited.
 

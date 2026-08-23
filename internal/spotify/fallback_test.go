@@ -2,7 +2,9 @@ package spotify
 
 import (
 	"context"
+	"errors"
 	"testing"
+	"time"
 )
 
 type apiStub struct {
@@ -255,6 +257,20 @@ func TestFallbackPlaybackOnRateLimit(t *testing.T) {
 	}
 	if webCalls != 1 || connectCalls != 1 {
 		t.Fatalf("unexpected call counts web=%d connect=%d", webCalls, connectCalls)
+	}
+}
+
+func TestFallbackPreservesRateLimitHintWhenConnectFails(t *testing.T) {
+	web := apiStub{playbackFn: func(context.Context) (PlaybackStatus, error) {
+		return PlaybackStatus{}, APIError{Status: 429, Message: "rate limit", RetryAfter: 24 * time.Hour}
+	}}
+	connect := apiStub{playbackFn: func(context.Context) (PlaybackStatus, error) {
+		return PlaybackStatus{}, errors.New("connect unavailable")
+	}}
+	_, err := NewPlaybackFallbackClient(web, connect).Playback(context.Background())
+	var apiErr APIError
+	if !errors.As(err, &apiErr) || apiErr.RetryAfter != 24*time.Hour {
+		t.Fatalf("expected actionable retry hint, got %v", err)
 	}
 }
 

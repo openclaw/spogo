@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
+
+	"github.com/steipete/spogo/internal/cookies"
 )
 
 func TestAutoFallbackOnUnsupported(t *testing.T) {
@@ -127,6 +130,104 @@ func TestAutoNoFallbackOnGenericError(t *testing.T) {
 	}
 	if calls["Playback"] != 1 {
 		t.Fatalf("expected no fallback, got %d", calls["Playback"])
+	}
+}
+
+func TestAutoPlaybackFallsBackToLocalAfterBothRemoteEnginesFail(t *testing.T) {
+	connectCalls := map[string]int{}
+	webCalls := map[string]int{}
+	localCalls := map[string]int{}
+	connect := apiStub{calls: connectCalls, playbackFn: func(context.Context) (PlaybackStatus, error) {
+		return PlaybackStatus{}, cookies.ErrNoCookies
+	}}
+	web := apiStub{calls: webCalls, playbackFn: func(context.Context) (PlaybackStatus, error) {
+		return PlaybackStatus{}, cookies.ErrNoCookies
+	}}
+	local := apiStub{calls: localCalls, playbackFn: func(context.Context) (PlaybackStatus, error) {
+		return PlaybackStatus{IsPlaying: true, Device: Device{Name: "Local Spotify"}}, nil
+	}}
+	client := NewAutoClient(connect, web, local)
+	playback, err := client.Playback(context.Background())
+	if err != nil || !playback.IsPlaying || playback.Device.Name != "Local Spotify" {
+		t.Fatalf("playback=%#v err=%v", playback, err)
+	}
+	if connectCalls["Playback"] != 1 || webCalls["Playback"] != 1 || localCalls["Playback"] != 1 {
+		t.Fatalf("fallback order connect=%#v web=%#v local=%#v", connectCalls, webCalls, localCalls)
+	}
+}
+
+func TestAutoPlaybackControlFallsBackToLocalAfterRateLimits(t *testing.T) {
+	connectCalls := map[string]int{}
+	webCalls := map[string]int{}
+	localCalls := map[string]int{}
+	remoteError := APIError{Status: 429, RetryAfter: 24 * time.Hour}
+	connect := apiStub{calls: connectCalls, pauseFn: func(context.Context) error { return remoteError }}
+	web := apiStub{calls: webCalls, pauseFn: func(context.Context) error { return remoteError }}
+	local := apiStub{calls: localCalls, pauseFn: func(context.Context) error { return nil }}
+	if err := NewAutoClient(connect, web, local).Pause(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if connectCalls["Pause"] != 1 || webCalls["Pause"] != 1 || localCalls["Pause"] != 1 {
+		t.Fatalf("fallback order connect=%#v web=%#v local=%#v", connectCalls, webCalls, localCalls)
+	}
+}
+
+func TestAutoUsesLocalOnlyForPlaybackCommands(t *testing.T) {
+	localCalls := map[string]int{}
+	connect := apiStub{
+		searchFn: func(context.Context, string, string, int, int) (SearchResult, error) {
+			return SearchResult{}, ErrUnsupported
+		},
+		libraryTracksFn: func(context.Context, int, int) ([]Item, int, error) {
+			return nil, 0, ErrUnsupported
+		},
+	}
+	web := apiStub{
+		searchFn: func(context.Context, string, string, int, int) (SearchResult, error) {
+			return SearchResult{}, errors.New("web unavailable")
+		},
+		libraryTracksFn: func(context.Context, int, int) ([]Item, int, error) {
+			return nil, 0, errors.New("web unavailable")
+		},
+	}
+	local := apiStub{calls: localCalls}
+	client := NewAutoClient(connect, web, local)
+	if _, err := client.Search(context.Background(), "track", "weezer", 1, 0); err == nil {
+		t.Fatal("expected remote search failure")
+	}
+	if _, _, err := client.LibraryTracks(context.Background(), 1, 0); err == nil {
+		t.Fatal("expected remote library failure")
+	}
+	if len(localCalls) != 0 {
+		t.Fatalf("unsupported commands reached local Spotify: %#v", localCalls)
+	}
+}
+
+func TestAutoSkipsLocalWhenRemotePlaybackSucceeds(t *testing.T) {
+	localCalls := map[string]int{}
+	client := NewAutoClient(apiStub{playbackFn: func(context.Context) (PlaybackStatus, error) {
+		return PlaybackStatus{IsPlaying: true}, nil
+	}}, apiStub{}, apiStub{calls: localCalls})
+	if _, err := client.Playback(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(localCalls) != 0 {
+		t.Fatalf("local Spotify used before remote failure: %#v", localCalls)
+	}
+}
+
+func TestAutoPreservesRateLimitHintWhenFallbackFails(t *testing.T) {
+	primary := APIError{Status: 429, Message: "rate limit", RetryAfter: 24 * time.Hour}
+	connect := apiStub{searchFn: func(context.Context, string, string, int, int) (SearchResult, error) {
+		return SearchResult{}, primary
+	}}
+	web := apiStub{searchFn: func(context.Context, string, string, int, int) (SearchResult, error) {
+		return SearchResult{}, errors.New("secondary unavailable")
+	}}
+	_, err := NewAutoClient(connect, web).Search(context.Background(), "track", "weezer", 1, 0)
+	var apiErr APIError
+	if !errors.As(err, &apiErr) || apiErr.RetryAfter != 24*time.Hour {
+		t.Fatalf("expected actionable retry hint, got %v", err)
 	}
 }
 

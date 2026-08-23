@@ -110,7 +110,7 @@ When Connect state has no origin device, `spogo` falls back to the Web API trans
 
 - **`connect`** (default) — playback control via Spotify's internal Connect endpoints. Best fidelity for transitions, queueing, and device transfer; auto-falls-back to Web API for transfers when no origin device exists.
 - **`web`** — the public Web API. Slower, rate-limited, but the only option for accounts with restrictive Connect availability.
-- **`auto`** — Connect first, fall back to Web on Connect-unsupported features.
+- **`auto`** — Connect first, then Web; on macOS, playback status/control finally fall back to Spotify.app through AppleScript if both remote engines fail.
 - **`applescript`** (macOS only) — drive Spotify.app directly via AppleScript. No network, but only sees the local Mac app.
 
 See [Engines](engines.md) for the full breakdown.
@@ -119,4 +119,4 @@ See [Engines](engines.md) for the full breakdown.
 
 - `no active device` — open Spotify on a phone/desktop/Connect speaker first, or pass `--device`.
 - `403 PREMIUM_REQUIRED` — playback requires a Spotify Premium account.
-- `429 too many requests` — Connect engine handles rate limits internally; if you see this on `web`, switch to `auto` or `connect`.
+- `429 too many requests` — prefer `connect` for supported playback; Web-API-only fallback paths can still be limited, so honor the reported `retry-after hint`.
