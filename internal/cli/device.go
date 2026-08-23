@@ -35,7 +35,11 @@ func (cmd *DeviceListCmd) Run(ctx *app.Context) error {
 		if device.Active {
 			label = ctx.Output.Theme.Accent(label)
 		}
-		human = append(human, fmt.Sprintf("%s (%s) %s", label, device.Type, strings.TrimSpace(activeMarker(device.Active))))
+		line := fmt.Sprintf("%s (%s)", label, device.Type)
+		if marker := activeMarker(device.Active); marker != "" {
+			line += " " + marker
+		}
+		human = append(human, line)
 	}
 	return ctx.Output.Emit(devices, plain, human)
 }

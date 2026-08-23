@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -39,27 +40,78 @@ func itemPlain(item spotify.Item) string {
 }
 
 func itemHuman(w *output.Writer, item spotify.Item) string {
-	accent := w.Theme.Accent
-	muted := w.Theme.Muted
 	switch item.Type {
 	case "track":
-		return fmt.Sprintf("%s — %s %s", accent(item.Name), strings.Join(item.Artists, ", "), muted("· "+item.Album))
+		return humanItemLine(w, item.Name, strings.Join(item.Artists, ", "), item.Album)
 	case "album":
-		return fmt.Sprintf("%s — %s %s", accent(item.Name), strings.Join(item.Artists, ", "), muted("· "+item.ReleaseDate))
+		return humanItemLine(w, item.Name, strings.Join(item.Artists, ", "), item.ReleaseDate)
 	case "artist":
-		return fmt.Sprintf("%s %s", accent(item.Name), muted(fmt.Sprintf("· %d followers", item.Followers)))
-	case "playlist":
-		if item.TotalTracks > 0 {
-			return fmt.Sprintf("%s — %s %s", accent(item.Name), item.Owner, muted(fmt.Sprintf("· %d tracks", item.TotalTracks)))
+		followers := ""
+		if item.Followers > 0 {
+			followers = formatThousands(item.Followers) + " " + pluralNoun(item.Followers, "follower")
 		}
-		return fmt.Sprintf("%s — %s", accent(item.Name), item.Owner)
+		return humanItemLine(w, item.Name, "", followers)
+	case "playlist":
+		tracks := ""
+		if item.TotalTracks > 0 {
+			tracks = fmt.Sprintf("%d %s", item.TotalTracks, pluralNoun(item.TotalTracks, "track"))
+		}
+		return humanItemLine(w, item.Name, item.Owner, tracks)
 	case "show":
-		return fmt.Sprintf("%s — %s %s", accent(item.Name), item.Publisher, muted(fmt.Sprintf("· %d episodes", item.TotalEpisodes)))
+		episodes := ""
+		if item.TotalEpisodes > 0 {
+			episodes = fmt.Sprintf("%d %s", item.TotalEpisodes, pluralNoun(item.TotalEpisodes, "episode"))
+		}
+		return humanItemLine(w, item.Name, item.Publisher, episodes)
 	case "episode":
-		return fmt.Sprintf("%s %s", accent(item.Name), muted(fmt.Sprintf("· %s", humanDuration(item.DurationMS))))
+		duration := ""
+		if item.DurationMS > 0 {
+			duration = humanDuration(item.DurationMS)
+		}
+		return humanItemLine(w, item.Name, item.Show, duration)
 	default:
-		return accent(item.Name)
+		return w.Theme.Accent(item.Name)
 	}
+}
+
+func pluralNoun(count int, singular string) string {
+	if count == 1 {
+		return singular
+	}
+	return singular + "s"
+}
+
+func humanItemLine(w *output.Writer, name, secondary string, details ...string) string {
+	var line strings.Builder
+	line.WriteString(w.Theme.Accent(name))
+	if secondary != "" {
+		line.WriteString(" — ")
+		line.WriteString(secondary)
+	}
+	for _, detail := range details {
+		if detail == "" {
+			continue
+		}
+		line.WriteByte(' ')
+		line.WriteString(w.Theme.Muted("· " + detail))
+	}
+	return line.String()
+}
+
+func formatThousands(number int) string {
+	digits := strconv.Itoa(number)
+	if len(digits) <= 3 {
+		return digits
+	}
+	var formatted strings.Builder
+	formatted.Grow(len(digits) + (len(digits)-1)/3)
+	for index, digit := range digits {
+		if index > 0 && (len(digits)-index)%3 == 0 {
+			formatted.WriteByte(',')
+		}
+		formatted.WriteRune(digit)
+	}
+	return formatted.String()
 }
 
 func humanDuration(ms int) string {
@@ -88,15 +140,16 @@ func playbackPlain(status spotify.PlaybackStatus) string {
 }
 
 func playbackHuman(w *output.Writer, status spotify.PlaybackStatus) string {
-	accent := w.Theme.Accent
-	muted := w.Theme.Muted
 	state := "paused"
 	if status.IsPlaying {
 		state = "playing"
 	}
-	track := ""
-	if status.Item != nil {
-		track = fmt.Sprintf("%s — %s", accent(status.Item.Name), strings.Join(status.Item.Artists, ", "))
+	line := w.Theme.Accent(strings.ToUpper(state))
+	if status.Item != nil && status.Item.Name != "" {
+		line += " " + humanItemLine(w, status.Item.Name, strings.Join(status.Item.Artists, ", "))
 	}
-	return fmt.Sprintf("%s %s %s", accent(strings.ToUpper(state)), track, muted("· "+status.Device.Name))
+	if status.Device.Name != "" {
+		line += " " + w.Theme.Muted("· "+status.Device.Name)
+	}
+	return line
 }
