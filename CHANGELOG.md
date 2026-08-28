@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- Add official Spotify Authorization Code with PKCE for Web API requests, including automatic refresh and a secure per-profile token cache while preserving cookie-based Connect behavior
+
 ### Changed
 
 - Refresh Go dependencies, including Kong, SweetCookie, SQLite, and formatting tools, and build with Go 1.26.7 for compatibility with GitHub's default CodeQL runner

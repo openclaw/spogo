@@ -13,19 +13,22 @@ import (
 )
 
 type Settings struct {
-	ConfigPath string
-	Profile    string
-	Timeout    time.Duration
-	Market     string
-	Language   string
-	Device     string
-	Engine     string
-	Format     output.Format
-	NoColor    bool
-	Quiet      bool
-	Verbose    bool
-	Debug      bool
-	NoInput    bool
+	ConfigPath         string
+	Profile            string
+	Timeout            time.Duration
+	Market             string
+	Language           string
+	Device             string
+	Engine             string
+	Auth               string
+	SpotifyClientID    string
+	SpotifyRedirectURI string
+	Format             output.Format
+	NoColor            bool
+	Quiet              bool
+	Verbose            bool
+	Debug              bool
+	NoInput            bool
 }
 
 type Context struct {
@@ -70,6 +73,10 @@ func (c *Context) ResolveCookiePath() string {
 
 func (c *Context) ResolveCachePath() string {
 	return config.CachePath(c.ConfigPath, c.ProfileKey)
+}
+
+func (c *Context) ResolveOAuthTokenPath() string {
+	return config.OAuthTokenPath(c.ConfigPath, c.ProfileKey)
 }
 
 func (c *Context) ClearCache() error {

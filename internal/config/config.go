@@ -19,13 +19,16 @@ type Config struct {
 }
 
 type Profile struct {
-	Browser        string `toml:"browser"`
-	BrowserProfile string `toml:"browser_profile"`
-	CookiePath     string `toml:"cookie_path"`
-	Market         string `toml:"market"`
-	Language       string `toml:"language"`
-	Device         string `toml:"device"`
-	Engine         string `toml:"engine"`
+	Browser            string `toml:"browser"`
+	BrowserProfile     string `toml:"browser_profile"`
+	CookiePath         string `toml:"cookie_path"`
+	Auth               string `toml:"auth"`
+	SpotifyClientID    string `toml:"spotify_client_id"`
+	SpotifyRedirectURI string `toml:"spotify_redirect_uri"`
+	Market             string `toml:"market"`
+	Language           string `toml:"language"`
+	Device             string `toml:"device"`
+	Engine             string `toml:"engine"`
 }
 
 func DefaultPath() (string, error) {
@@ -137,6 +140,17 @@ func CachePath(configPath, profile string) string {
 	}
 	base := filepath.Dir(configPath)
 	return filepath.Join(base, "cache", profile+".json")
+}
+
+func OAuthTokenPath(configPath, profile string) string {
+	if profile == "" {
+		profile = DefaultProfile
+	}
+	if configPath == "" {
+		return ""
+	}
+	base := filepath.Dir(configPath)
+	return filepath.Join(base, "oauth", profile+".json")
 }
 
 func (c *Config) normalize() {

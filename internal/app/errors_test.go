@@ -49,6 +49,9 @@ func TestExitCode(t *testing.T) {
 	if ExitCode(cookies.ErrNoCookies) != 3 {
 		t.Fatalf("expected 3")
 	}
+	if ExitCode(spotify.ErrOAuthAuthentication) != 3 {
+		t.Fatalf("expected 3")
+	}
 	if ExitCode(spotify.APIError{Status: 500}) != 1 {
 		t.Fatalf("expected 1")
 	}

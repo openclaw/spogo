@@ -42,6 +42,14 @@ func TestResolveCookiePath(t *testing.T) {
 	}
 }
 
+func TestResolveOAuthTokenPath(t *testing.T) {
+	ctx := &Context{ConfigPath: "/tmp/spogo/config.toml", ProfileKey: "work"}
+	path := ctx.ResolveOAuthTokenPath()
+	if filepath.Base(path) != "work.json" || filepath.Base(filepath.Dir(path)) != "oauth" {
+		t.Fatalf("oauth token path: %s", path)
+	}
+}
+
 func TestClearCache(t *testing.T) {
 	dir := t.TempDir()
 	ctx := &Context{ConfigPath: filepath.Join(dir, "config.toml"), ProfileKey: "default"}
@@ -198,6 +206,32 @@ func TestSpotifyUnknownEngine(t *testing.T) {
 	}
 }
 
+func TestSpotifyOAuthWebEngine(t *testing.T) {
+	ctx := &Context{
+		ConfigPath: "/tmp/spogo/config.toml",
+		ProfileKey: "default",
+		Profile: config.Profile{
+			Engine:          "web",
+			Auth:            "oauth",
+			SpotifyClientID: "client-id",
+		},
+	}
+	client, err := ctx.Spotify()
+	if err != nil {
+		t.Fatalf("spotify: %v", err)
+	}
+	if client == nil {
+		t.Fatalf("expected oauth web client")
+	}
+}
+
+func TestSpotifyUnknownAuth(t *testing.T) {
+	ctx := &Context{Profile: config.Profile{CookiePath: "/tmp/cookies.json", Engine: "web", Auth: "nope"}}
+	if _, err := ctx.Spotify(); err == nil {
+		t.Fatalf("expected error")
+	}
+}
+
 func TestIsColorEnabled(t *testing.T) {
 	if isColorEnabled(output.FormatJSON, false) {
 		t.Fatalf("expected false")
@@ -285,23 +319,29 @@ func TestNewContextAppliesRequestedProfileAndSettings(t *testing.T) {
 	path := filepath.Join(dir, "config.toml")
 	cfg := config.Default()
 	cfg.SetProfile("work", config.Profile{
-		Market:   "US",
-		Language: "en",
-		Device:   "speaker",
-		Engine:   "web",
+		Market:             "US",
+		Language:           "en",
+		Device:             "speaker",
+		Engine:             "web",
+		Auth:               "cookies",
+		SpotifyClientID:    "stored-client",
+		SpotifyRedirectURI: "http://127.0.0.1:8888/callback",
 	})
 	if err := config.Save(path, cfg); err != nil {
 		t.Fatalf("save: %v", err)
 	}
 
 	ctx, err := NewContext(Settings{
-		ConfigPath: path,
-		Profile:    "work",
-		Market:     "DE",
-		Language:   "de",
-		Device:     "desktop",
-		Engine:     "auto",
-		Format:     output.FormatPlain,
+		ConfigPath:         path,
+		Profile:            "work",
+		Market:             "DE",
+		Language:           "de",
+		Device:             "desktop",
+		Engine:             "auto",
+		Auth:               "oauth",
+		SpotifyClientID:    "override-client",
+		SpotifyRedirectURI: "http://[::1]:9999/callback",
+		Format:             output.FormatPlain,
 	})
 	if err != nil {
 		t.Fatalf("new context: %v", err)
@@ -309,7 +349,7 @@ func TestNewContextAppliesRequestedProfileAndSettings(t *testing.T) {
 	if ctx.ProfileKey != "work" {
 		t.Fatalf("profile key: %s", ctx.ProfileKey)
 	}
-	if ctx.Profile.Market != "DE" || ctx.Profile.Language != "de" || ctx.Profile.Device != "desktop" || ctx.Profile.Engine != "auto" {
+	if ctx.Profile.Market != "DE" || ctx.Profile.Language != "de" || ctx.Profile.Device != "desktop" || ctx.Profile.Engine != "auto" || ctx.Profile.Auth != "oauth" || ctx.Profile.SpotifyClientID != "override-client" || ctx.Profile.SpotifyRedirectURI != "http://[::1]:9999/callback" {
 		t.Fatalf("profile overrides not applied: %+v", ctx.Profile)
 	}
 }
@@ -328,13 +368,16 @@ func TestResolveProfileKeyFallbacks(t *testing.T) {
 
 func TestApplySettingsKeepsEmptyValues(t *testing.T) {
 	profile := applySettings(config.Profile{
-		Market:   "US",
-		Language: "en",
-		Device:   "speaker",
-		Engine:   "web",
+		Market:             "US",
+		Language:           "en",
+		Device:             "speaker",
+		Engine:             "web",
+		Auth:               "oauth",
+		SpotifyClientID:    "client-id",
+		SpotifyRedirectURI: "http://127.0.0.1:8888/callback",
 	}, Settings{})
 
-	if profile.Market != "US" || profile.Language != "en" || profile.Device != "speaker" || profile.Engine != "web" {
+	if profile.Market != "US" || profile.Language != "en" || profile.Device != "speaker" || profile.Engine != "web" || profile.Auth != "oauth" || profile.SpotifyClientID != "client-id" || profile.SpotifyRedirectURI == "" {
 		t.Fatalf("profile changed unexpectedly: %+v", profile)
 	}
 }

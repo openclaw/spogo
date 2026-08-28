@@ -31,7 +31,16 @@ spogo auth import --browser chrome --browser-profile "Profile 1"
 
 If something goes wrong (locked keychain, weird WSL setup), see [Auth](auth.md) for `auth paste` and other fallbacks.
 
-Verify:
+For an official, cookie-free Web API setup instead, register `http://127.0.0.1:8888/callback` in a Spotify developer application and run:
+
+```bash
+spogo auth oauth login --client-id YOUR_SPOTIFY_CLIENT_ID
+spogo --engine web --auth oauth search track "test" --limit 1
+```
+
+OAuth supports the Web API client. Connect and `auto` still require browser cookies.
+
+Verify cookie auth:
 
 ```bash
 spogo auth status
@@ -80,7 +89,7 @@ spogo search track "lo-fi" --limit 5 --plain |
 
 ## Where to next
 
-- [Auth](auth.md) — cookie details, manual paste, troubleshooting.
+- [Auth](auth.md) — cookie import, official OAuth, token storage, and troubleshooting.
 - [Engines](engines.md) — when to choose `connect`, `web`, `auto`, or `applescript`.
 - [Output](output.md) — the JSON / plain contract.
 - [Agents](agents.md) — end-to-end automation patterns.

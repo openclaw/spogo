@@ -1,8 +1,9 @@
 # spogo CLI spec
 
-One-liner: Spotify power CLI using web cookies; search + playback control.
+One-liner: Spotify power CLI using browser cookies or official OAuth; search + playback control.
 Parser: Kong.
 Cookies: steipete/sweetcookie (local sweetcookie).
+OAuth: Spotify Authorization Code with PKCE; no client secret.
 Output: human by default; `--plain` or `--json`.
 Color: on by default; respects `NO_COLOR`, `TERM=dumb`, `--no-color`.
 Platforms: macOS, Linux, Windows.
@@ -30,6 +31,9 @@ spogo [global flags] <command> [args]
 - `--language <tag>` default: `en`
 - `--device <name|id>` default: active device
 - `--engine <auto|web|connect|applescript>` default: `connect` (`applescript` is macOS-only)
+- `--auth <cookies|oauth>` default: `cookies`; selects the Web API token provider
+- `--spotify-client-id <id>` / `SPOGO_SPOTIFY_CLIENT_ID`
+- `--spotify-redirect-uri <uri>` / `SPOGO_SPOTIFY_REDIRECT_URI`
 - `--no-input`
 
 ## Commands
@@ -57,6 +61,15 @@ spogo [global flags] <command> [args]
   - `--domain <suffix>` default `spotify.com`
   - `--path <path>` default `/`
 - `spogo auth clear`
+- `spogo auth oauth login`
+  - Authorization Code with PKCE and state validation
+  - flags: `--client-id`, `--redirect-uri`, `--no-open`, `--wait-timeout`
+  - callback must be an explicit IPv4/IPv6 loopback URI with a port
+  - stores no client secret
+- `spogo auth oauth status`
+  - local-only; never emits token values
+- `spogo auth oauth clear`
+  - removes the OAuth token cache and restores cookie auth selection
 
 ### search
 
@@ -143,8 +156,8 @@ spogo [global flags] <command> [args]
 ## Engines
 
 - `auto`: connect first; fall back to web for unsupported features or rate limits; on macOS, playback status/control can finally fall back to Spotify.app through AppleScript after both remote engines fail.
-- `connect`: internal connect-state endpoints for playback; GraphQL for search/info. Auth/session data and the last active playback route are cached per profile.
-- `web`: Web API endpoints; search/info/playback auto-fallback to connect when rate limited.
+- `connect`: internal connect-state endpoints for playback; GraphQL for search/info. Auth/session data and the last active playback route are cached per profile. Connect always requires browser cookies. Its public Web API fallbacks use the selected `cookies` or `oauth` provider.
+- `web`: Web API endpoints authenticated by the selected `cookies` or `oauth` provider; search/info/playback can fall back to Connect when rate limited, which requires cookies.
 
 ## Exit codes
 
@@ -158,7 +171,10 @@ spogo [global flags] <command> [args]
 
 - Env prefix: `SPOGO_`
 - Precedence: flags > env > config
-- Secrets: never via flags; use browser cookies only.
+- OAuth precedence: command/global flags > env > profile config.
+- Non-secret profile keys: `auth`, `spotify_client_id`, `spotify_redirect_uri`.
+- OAuth token cache: `<config-dir>/oauth/<profile>.json`, atomic owner-only writes (`0600`; parent `0700` on POSIX).
+- Client secrets are unsupported: no config key, flag, or environment variable exists.
 - Overrides:
   - `SPOGO_TOTP_SECRET_URL` (http(s) or `file://...`)
   - `SPOGO_CONNECT_VERSION` (connect playback client version)
@@ -166,6 +182,8 @@ spogo [global flags] <command> [args]
 ## Examples
 
 - `spogo auth import --browser chrome`
+- `spogo auth oauth login --client-id YOUR_SPOTIFY_CLIENT_ID`
+- `spogo --engine web --auth oauth search track "weezer" --limit 5 --plain`
 - `spogo search track "weezer" --limit 5 --plain`
 - `spogo play spotify:track:7hQJA50XrCWABAu5v6QZ4i`
 - `spogo device list --json`
