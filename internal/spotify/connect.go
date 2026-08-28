@@ -17,6 +17,7 @@ type ConnectOptions struct {
 	Device    string
 	Timeout   time.Duration
 	CachePath string
+	WebClient *Client
 }
 
 type ConnectClient struct {
@@ -64,6 +65,7 @@ func NewConnectClient(opts ConnectOptions) (*ConnectClient, error) {
 		session:  session,
 		hashes:   newHashResolver(httpClient, session),
 		cache:    cache,
+		web:      opts.WebClient,
 	}, nil
 }
 

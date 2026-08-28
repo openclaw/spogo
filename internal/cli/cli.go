@@ -44,21 +44,24 @@ type CLI struct {
 }
 
 type Globals struct {
-	Config   string           `help:"Config file path." env:"SPOGO_CONFIG"`
-	Profile  string           `help:"Profile name." env:"SPOGO_PROFILE"`
-	Timeout  time.Duration    `help:"HTTP timeout." env:"SPOGO_TIMEOUT" default:"10s"`
-	Market   string           `help:"Market country code." env:"SPOGO_MARKET"`
-	Language string           `help:"Language/locale." env:"SPOGO_LANGUAGE"`
-	Device   string           `help:"Device name or id." env:"SPOGO_DEVICE"`
-	Engine   string           `help:"Engine (auto|web|connect|applescript)." env:"SPOGO_ENGINE"`
-	JSON     bool             `help:"JSON output." env:"SPOGO_JSON"`
-	Plain    bool             `help:"Plain output." env:"SPOGO_PLAIN"`
-	NoColor  bool             `help:"Disable color output." env:"SPOGO_NO_COLOR"`
-	Quiet    bool             `short:"q" help:"Quiet output." env:"SPOGO_QUIET"`
-	Verbose  bool             `short:"v" help:"Verbose output." env:"SPOGO_VERBOSE"`
-	Debug    bool             `short:"d" help:"Debug output." env:"SPOGO_DEBUG"`
-	NoInput  bool             `help:"Disable prompts." env:"SPOGO_NO_INPUT"`
-	Version  kong.VersionFlag `help:"Print version."`
+	Config             string           `help:"Config file path." env:"SPOGO_CONFIG"`
+	Profile            string           `help:"Profile name." env:"SPOGO_PROFILE"`
+	Timeout            time.Duration    `help:"HTTP timeout." env:"SPOGO_TIMEOUT" default:"10s"`
+	Market             string           `help:"Market country code." env:"SPOGO_MARKET"`
+	Language           string           `help:"Language/locale." env:"SPOGO_LANGUAGE"`
+	Device             string           `help:"Device name or id." env:"SPOGO_DEVICE"`
+	Engine             string           `help:"Engine (auto|web|connect|applescript)." env:"SPOGO_ENGINE"`
+	Auth               string           `help:"Web API authentication (cookies|oauth)." env:"SPOGO_AUTH"`
+	SpotifyClientID    string           `name:"spotify-client-id" help:"Spotify application client ID." env:"SPOGO_SPOTIFY_CLIENT_ID"`
+	SpotifyRedirectURI string           `name:"spotify-redirect-uri" help:"Spotify OAuth redirect URI." env:"SPOGO_SPOTIFY_REDIRECT_URI"`
+	JSON               bool             `help:"JSON output." env:"SPOGO_JSON"`
+	Plain              bool             `help:"Plain output." env:"SPOGO_PLAIN"`
+	NoColor            bool             `help:"Disable color output." env:"SPOGO_NO_COLOR"`
+	Quiet              bool             `short:"q" help:"Quiet output." env:"SPOGO_QUIET"`
+	Verbose            bool             `short:"v" help:"Verbose output." env:"SPOGO_VERBOSE"`
+	Debug              bool             `short:"d" help:"Debug output." env:"SPOGO_DEBUG"`
+	NoInput            bool             `help:"Disable prompts." env:"SPOGO_NO_INPUT"`
+	Version            kong.VersionFlag `help:"Print version."`
 }
 
 func (g Globals) Settings() (app.Settings, error) {
@@ -67,19 +70,22 @@ func (g Globals) Settings() (app.Settings, error) {
 		return app.Settings{}, err
 	}
 	return app.Settings{
-		ConfigPath: g.Config,
-		Profile:    g.Profile,
-		Timeout:    g.Timeout,
-		Market:     g.Market,
-		Language:   g.Language,
-		Device:     g.Device,
-		Engine:     g.Engine,
-		Format:     format,
-		NoColor:    g.NoColor,
-		Quiet:      g.Quiet,
-		Verbose:    g.Verbose,
-		Debug:      g.Debug,
-		NoInput:    g.NoInput,
+		ConfigPath:         g.Config,
+		Profile:            g.Profile,
+		Timeout:            g.Timeout,
+		Market:             g.Market,
+		Language:           g.Language,
+		Device:             g.Device,
+		Engine:             g.Engine,
+		Auth:               g.Auth,
+		SpotifyClientID:    g.SpotifyClientID,
+		SpotifyRedirectURI: g.SpotifyRedirectURI,
+		Format:             format,
+		NoColor:            g.NoColor,
+		Quiet:              g.Quiet,
+		Verbose:            g.Verbose,
+		Debug:              g.Debug,
+		NoInput:            g.NoInput,
 	}, nil
 }
 

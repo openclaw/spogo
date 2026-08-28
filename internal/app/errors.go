@@ -47,7 +47,7 @@ func ExitCode(err error) int {
 	if errors.As(err, &parseErr) {
 		return 2
 	}
-	if errors.Is(err, cookies.ErrNoCookies) {
+	if errors.Is(err, cookies.ErrNoCookies) || errors.Is(err, spotify.ErrOAuthAuthentication) {
 		return 3
 	}
 	var apiErr spotify.APIError

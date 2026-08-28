@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -55,6 +56,37 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 	}
 }
 
+func TestSaveLoadOAuthSettingsWithoutClientSecret(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.toml")
+	cfg := Default()
+	cfg.SetProfile("default", Profile{
+		Auth:               "oauth",
+		SpotifyClientID:    "client-id",
+		SpotifyRedirectURI: "http://127.0.0.1:8888/callback",
+	})
+	if err := Save(path, cfg); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	if string(data) == "" || !strings.Contains(string(data), "spotify_client_id") {
+		t.Fatalf("oauth settings missing: %s", data)
+	}
+	if strings.Contains(strings.ToLower(string(data)), "client_secret") {
+		t.Fatalf("config must not contain a client secret field: %s", data)
+	}
+	loaded, err := Load(path)
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if got := loaded.Profile("default"); got.Auth != "oauth" || got.SpotifyClientID != "client-id" {
+		t.Fatalf("oauth profile mismatch: %+v", got)
+	}
+}
+
 func TestCookiePath(t *testing.T) {
 	path := CookiePath("/tmp/spogo/config.toml", "default")
 	if filepath.Base(path) != "default.json" {
@@ -84,6 +116,16 @@ func TestCachePath(t *testing.T) {
 func TestCachePathEmptyConfig(t *testing.T) {
 	if CachePath("", "default") != "" {
 		t.Fatalf("expected empty")
+	}
+}
+
+func TestOAuthTokenPath(t *testing.T) {
+	path := OAuthTokenPath("/tmp/spogo/config.toml", "work")
+	if filepath.Base(path) != "work.json" || filepath.Base(filepath.Dir(path)) != "oauth" {
+		t.Fatalf("oauth token path: %s", path)
+	}
+	if OAuthTokenPath("", "default") != "" {
+		t.Fatalf("expected empty oauth token path")
 	}
 }
 

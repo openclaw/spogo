@@ -24,6 +24,9 @@ Apply to every command.
 | `--language <tag>` | `en` | Language/locale. |
 | `--device <name|id>` | active | Target a specific Connect device. |
 | `--engine <name>` | `connect` | `auto` / `connect` / `web` / `applescript`. |
+| `--auth <name>` | `cookies` | Web API auth: `cookies` / `oauth`. |
+| `--spotify-client-id <id>` | profile | Public Spotify application client ID. |
+| `--spotify-redirect-uri <uri>` | profile | Registered loopback OAuth redirect URI. |
 | `--json` | off | JSON output. |
 | `--plain` | off | Plain (TSV) output. |
 | `--no-color` | auto | Disable color in human output. |
@@ -67,7 +70,7 @@ To enable them permanently, add the appropriate command to `~/.bashrc`, `~/.zshr
 
 ## auth
 
-Cookie management. See [Auth](auth.md).
+Cookie and official Spotify OAuth management. See [Auth](auth.md).
 
 | Command | Purpose |
 | --- | --- |
@@ -75,6 +78,9 @@ Cookie management. See [Auth](auth.md).
 | `spogo auth import [--browser <name>] [--browser-profile <name>] [--cookie-path <file>] [--domain <host>]` | Pull cookies from a browser store. |
 | `spogo auth paste [--cookie-path <file>] [--domain <suffix>] [--path <path>]` | Read cookies from stdin (interactive prompts unless `--no-input`). |
 | `spogo auth clear` | Delete stored cookies for the current profile. |
+| `spogo auth oauth login [--client-id <id>] [--redirect-uri <uri>] [--no-open] [--wait-timeout <dur>]` | Run Authorization Code with PKCE and cache refresh credentials. |
+| `spogo auth oauth status` | Show non-secret local OAuth cache metadata. |
+| `spogo auth oauth clear` | Delete the OAuth token cache and restore cookie auth selection. |
 
 ## search
 
@@ -189,7 +195,7 @@ Connect devices. See [Devices](devices.md).
 | `0` | Success |
 | `1` | Generic failure |
 | `2` | Invalid usage / validation |
-| `3` | Auth / cookies missing or invalid |
+| `3` | Auth credentials missing or invalid |
 | `4` | Network / timeouts |
 
 See [Output](output.md) for the full output contract.

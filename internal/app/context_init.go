@@ -62,5 +62,14 @@ func applySettings(profile config.Profile, settings Settings) config.Profile {
 	if settings.Engine != "" {
 		profile.Engine = settings.Engine
 	}
+	if settings.Auth != "" {
+		profile.Auth = settings.Auth
+	}
+	if settings.SpotifyClientID != "" {
+		profile.SpotifyClientID = settings.SpotifyClientID
+	}
+	if settings.SpotifyRedirectURI != "" {
+		profile.SpotifyRedirectURI = settings.SpotifyRedirectURI
+	}
 	return profile
 }

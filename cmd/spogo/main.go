@@ -23,7 +23,7 @@ func run(args []string, out io.Writer, errOut io.Writer) int {
 	parser, err := kong.New(
 		command,
 		kong.Name("spogo"),
-		kong.Description("Spotify power CLI using web cookies."),
+		kong.Description("Spotify power CLI using browser cookies or official OAuth."),
 		kong.UsageOnError(),
 		kong.Writers(out, errOut),
 		kong.Vars(cli.VersionVars()),

@@ -36,6 +36,34 @@ spogo auth status
 
 If that doesn't help, your browser's session may have expired. Visit `https://open.spotify.com`, log back in, then re-import.
 
+### OAuth login says the callback address is already in use
+
+The registered loopback port is occupied. Close the process using it, or add a different loopback redirect URI to the Spotify application and pass the exact same URI to `auth oauth login --redirect-uri`.
+
+### OAuth works with `--engine web` but Connect fails
+
+This is expected when cookies are missing. OAuth authenticates the public Web API client only. The internal `connect` protocol and the Connect-first `auto` engine still require Spotify browser cookies.
+
+For OAuth without cookies:
+
+```bash
+spogo --engine web --auth oauth status
+```
+
+### OAuth token cache permissions are rejected
+
+spogo requires owner-only OAuth credentials. On POSIX systems the token file must be `0600` and its directory must be `0700`. Fix those permissions, or run `spogo auth oauth clear` and log in again.
+
+### OAuth refresh is rejected
+
+The refresh token may have been revoked or expired. Run:
+
+```bash
+spogo auth oauth login
+```
+
+The client ID and redirect URI remain in the profile after `auth oauth clear`, so a client ID flag is only required when it is not already configured.
+
 ### macOS Chrome keychain prompt
 
 The first cookie import will trigger a "Chrome wants to use your confidential information from your keychain" dialog. Click **Always Allow**. If you mis-click **Deny**, fix it via:

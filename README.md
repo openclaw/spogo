@@ -2,7 +2,7 @@
 
 ![spogo banner](docs/assets/readme-banner.jpg)
 
- Power CLI using web cookies. Search, control playback, manage library/playlists, and script with JSON/plain output.
+ Power CLI using Spotify browser cookies or official OAuth. Search, control playback, manage library/playlists, and script with JSON/plain output.
 
 Product direction and compatibility policy: [VISION.md](VISION.md).
 
@@ -17,13 +17,15 @@ Product direction and compatibility policy: [VISION.md](VISION.md).
 - Playlist management (create/add/remove/list)
 - Device selection and status
 - Browser cookie import via `sweetcookie`
+- Official Spotify Authorization Code OAuth with PKCE, refresh tokens, and a secure per-profile token cache
+- Explicit `--auth cookies|oauth` selection for Web API requests
 - `--json` and `--plain` for scripting
 - Colorized human output (respects `NO_COLOR`, `TERM=dumb`, `--no-color`)
 - Engine switch: `auto` (connect → web → local Spotify.app for playback on macOS), `connect` (internal endpoints), `web` (Web API endpoints; search/info/playback fall back to connect on rate limit)
 
-## Why Cookies?
+## Cookies and OAuth
 
-Spotify's official Web API has strict rate limits that can make it impractical for agents and automation. Browser cookies let spogo use the same internal endpoints as the Spotify web player for catalog search, item lookup, library listing, listening history, and most playback and playlist operations:
+Cookie auth remains the default because Spotify's official Web API has strict rate limits that can make it impractical for agents and automation. Browser cookies let spogo use the same internal endpoints as the Spotify web player for catalog search, item lookup, library listing, listening history, and most playback and playlist operations:
 
 - **Fewer public-API rate limits** - Most reads and playback use the same internal endpoints as open.spotify.com
 - **No app registration** - No need to create a Spotify Developer app
@@ -33,6 +35,15 @@ Spotify's official Web API has strict rate limits that can make it impractical f
 Import your cookies once with `sweetcookie` and you're good to go (defaults to Chrome).
 
 Some operations still require Spotify's public Web API: saving/removing library tracks or albums, following/unfollowing artists, creating playlists, artist-top-track lookups used by artist playback, and certain device transfers or playback fallbacks. Explicit `--engine web` also uses the public API. These paths can return `429`; when Spotify supplies a cooldown, spogo reports its `retry-after hint`, which can be several hours.
+
+For a cookie-free Web API setup, spogo also supports Spotify's official Authorization Code flow with PKCE:
+
+```bash
+spogo auth oauth login --client-id YOUR_SPOTIFY_CLIENT_ID
+spogo --engine web --auth oauth search track "weezer"
+```
+
+OAuth never uses a client secret. Connect and internal endpoints still require browser cookies; selecting OAuth changes the Web API token provider, not the Connect protocol.
 
 ## Install
 
@@ -73,6 +84,9 @@ Global flags:
 - `--language <tag>` language/locale (default `en`)
 - `--device <name|id>` target device
 - `--engine <auto|web|connect|applescript>` API engine (default `connect`, `applescript` is macOS-only)
+- `--auth <cookies|oauth>` Web API authentication (default `cookies`)
+- `--spotify-client-id <id>` public Spotify application client ID
+- `--spotify-redirect-uri <uri>` registered loopback OAuth redirect URI
 - `--json` / `--plain`
 - `--no-color`
 - `-q, --quiet` / `-v, --verbose` / `-d, --debug`
@@ -86,6 +100,7 @@ Commands:
 
 - `completion bash|zsh|fish`
 - `auth status|import|paste|clear`
+- `auth oauth login|status|clear`
 - `search track|album|artist|playlist|show|episode`
 - `track info`, `album info`, `artist info`, `playlist info`, `show info`, `episode info`
 - `play [<id|url>] [--type ...] [--shuffle]`, `pause`, `next`, `prev`, `seek`, `volume`, `shuffle`, `repeat`, `status`
@@ -97,9 +112,9 @@ Commands:
 
 Full spec: `docs/spec.md`.
 
-## Cookies
+## Authentication
 
-`spogo` uses browser cookies (via `sweetcookie`) to fetch a web access token. Import cookies once:
+Cookie auth is the default. Import cookies once:
 
 ```bash
 spogo auth import --browser chrome
@@ -125,6 +140,8 @@ Non-interactive:
 ```bash
 printf '%s\n%s\n' "sp_dc=..." "sp_t=..." | spogo auth paste --no-input
 ```
+
+Official OAuth is available for the Web API client. Register `http://127.0.0.1:8888/callback` in a Spotify developer application, then run `spogo auth oauth login --client-id ...`. See [Auth](docs/auth.md) for scopes, storage, environment variables, and the exact Connect/OAuth interaction.
 
 ## Auto engine notes
 
