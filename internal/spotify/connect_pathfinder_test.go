@@ -128,7 +128,7 @@ func TestPathfinderFallbackToWeb(t *testing.T) {
 			return textResponse(http.StatusInternalServerError, "fail"), nil
 		}
 		payload := map[string]any{
-			"track": map[string]any{
+			"tracks": map[string]any{
 				"items": []map[string]any{{
 					"id":   "t1",
 					"uri":  "spotify:track:t1",
@@ -157,7 +157,7 @@ func TestPathfinderFallbackToWeb(t *testing.T) {
 func TestSearchViaWebAPIDefaultClient(t *testing.T) {
 	transport := roundTripperFunc(func(req *http.Request) (*http.Response, error) {
 		payload := map[string]any{
-			"track": map[string]any{
+			"tracks": map[string]any{
 				"items": []map[string]any{{
 					"id":   "t1",
 					"uri":  "spotify:track:t1",

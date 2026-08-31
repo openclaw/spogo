@@ -52,7 +52,7 @@ func (c *ConnectClient) searchViaWebAPI(ctx context.Context, kind, query string,
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return SearchResult{}, err
 	}
-	container, ok := response[kind]
+	container, ok := response[kind+"s"]
 	if !ok {
 		return SearchResult{}, fmt.Errorf("missing %s result", kind)
 	}

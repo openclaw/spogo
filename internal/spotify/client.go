@@ -70,7 +70,7 @@ func (c *Client) Search(ctx context.Context, kind, query string, limit, offset i
 	if err := c.get(ctx, "/search", params, &response); err != nil {
 		return SearchResult{}, err
 	}
-	container, ok := response[kind]
+	container, ok := response[kind+"s"]
 	if !ok {
 		return SearchResult{}, fmt.Errorf("missing %s result", kind)
 	}

@@ -37,7 +37,7 @@ func TestSearchTrack(t *testing.T) {
 			return
 		}
 		payload := map[string]any{
-			"track": map[string]any{
+			"tracks": map[string]any{
 				"items": []map[string]any{{
 					"id":            "t1",
 					"uri":           "spotify:track:t1",
