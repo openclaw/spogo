@@ -1,0 +1,145 @@
+{
+  "tracks": {
+    "href": "https://api.spotify.com/v1/search?q=fixture&type=track&limit=1&offset=1",
+    "limit": 1,
+    "offset": 1,
+    "total": 3,
+    "next": "https://api.spotify.com/v1/search?q=fixture&type=track&limit=1&offset=2",
+    "previous": "https://api.spotify.com/v1/search?q=fixture&type=track&limit=1&offset=0",
+    "items": [{
+      "id": "track1",
+      "uri": "spotify:track:track1",
+      "type": "track",
+      "name": "Fixture track",
+      "href": "https://api.spotify.com/v1/tracks/track1",
+      "external_urls": {"spotify": "https://open.spotify.com/track/track1"},
+      "album": {
+        "id": "album1",
+        "uri": "spotify:album:album1",
+        "type": "album",
+        "album_type": "album",
+        "name": "Fixture album",
+        "release_date": "2026-01-01",
+        "release_date_precision": "day",
+        "total_tracks": 10,
+        "images": []
+      },
+      "artists": [{"id": "artist1", "uri": "spotify:artist:artist1", "type": "artist", "name": "Fixture artist"}],
+      "disc_number": 1,
+      "track_number": 2,
+      "duration_ms": 123000,
+      "explicit": false,
+      "is_local": false,
+      "is_playable": true
+    }]
+  },
+  "albums": {
+    "href": "https://api.spotify.com/v1/search?q=fixture&type=album&limit=1&offset=1",
+    "limit": 1,
+    "offset": 1,
+    "total": 3,
+    "next": "https://api.spotify.com/v1/search?q=fixture&type=album&limit=1&offset=2",
+    "previous": "https://api.spotify.com/v1/search?q=fixture&type=album&limit=1&offset=0",
+    "items": [{
+      "id": "album1",
+      "uri": "spotify:album:album1",
+      "type": "album",
+      "album_type": "album",
+      "name": "Fixture album",
+      "external_urls": {"spotify": "https://open.spotify.com/album/album1"},
+      "artists": [{"id": "artist1", "uri": "spotify:artist:artist1", "type": "artist", "name": "Fixture artist"}],
+      "release_date": "2026-01-01",
+      "release_date_precision": "day",
+      "total_tracks": 10,
+      "images": []
+    }]
+  },
+  "artists": {
+    "href": "https://api.spotify.com/v1/search?q=fixture&type=artist&limit=1&offset=1",
+    "limit": 1,
+    "offset": 1,
+    "total": 3,
+    "next": "https://api.spotify.com/v1/search?q=fixture&type=artist&limit=1&offset=2",
+    "previous": "https://api.spotify.com/v1/search?q=fixture&type=artist&limit=1&offset=0",
+    "items": [{
+      "id": "artist1",
+      "uri": "spotify:artist:artist1",
+      "type": "artist",
+      "name": "Fixture artist",
+      "external_urls": {"spotify": "https://open.spotify.com/artist/artist1"},
+      "followers": {"href": null, "total": 1234},
+      "genres": ["rock"],
+      "images": []
+    }]
+  },
+  "playlists": {
+    "href": "https://api.spotify.com/v1/search?q=fixture&type=playlist&limit=1&offset=1",
+    "limit": 1,
+    "offset": 1,
+    "total": 3,
+    "next": "https://api.spotify.com/v1/search?q=fixture&type=playlist&limit=1&offset=2",
+    "previous": "https://api.spotify.com/v1/search?q=fixture&type=playlist&limit=1&offset=0",
+    "items": [{
+      "id": "playlist1",
+      "uri": "spotify:playlist:playlist1",
+      "type": "playlist",
+      "name": "Fixture playlist",
+      "external_urls": {"spotify": "https://open.spotify.com/playlist/playlist1"},
+      "description": "Synthetic search fixture playlist",
+      "owner": {"id": "fixture-owner", "display_name": "Fixture owner", "type": "user"},
+      "tracks": {"href": "https://api.spotify.com/v1/playlists/playlist1/tracks", "total": 10},
+      "collaborative": false,
+      "public": true,
+      "images": []
+    }]
+  },
+  "shows": {
+    "href": "https://api.spotify.com/v1/search?q=fixture&type=show&limit=1&offset=1",
+    "limit": 1,
+    "offset": 1,
+    "total": 3,
+    "next": "https://api.spotify.com/v1/search?q=fixture&type=show&limit=1&offset=2",
+    "previous": "https://api.spotify.com/v1/search?q=fixture&type=show&limit=1&offset=0",
+    "items": [{
+      "id": "show1",
+      "uri": "spotify:show:show1",
+      "type": "show",
+      "name": "Fixture show",
+      "external_urls": {"spotify": "https://open.spotify.com/show/show1"},
+      "description": "Synthetic search fixture show",
+      "html_description": "Synthetic search fixture show",
+      "publisher": "Fixture publisher",
+      "total_episodes": 10,
+      "languages": ["en"],
+      "media_type": "audio",
+      "explicit": false,
+      "is_externally_hosted": false,
+      "images": []
+    }]
+  },
+  "episodes": {
+    "href": "https://api.spotify.com/v1/search?q=fixture&type=episode&limit=1&offset=1",
+    "limit": 1,
+    "offset": 1,
+    "total": 3,
+    "next": "https://api.spotify.com/v1/search?q=fixture&type=episode&limit=1&offset=2",
+    "previous": "https://api.spotify.com/v1/search?q=fixture&type=episode&limit=1&offset=0",
+    "items": [{
+      "id": "episode1",
+      "uri": "spotify:episode:episode1",
+      "type": "episode",
+      "name": "Fixture episode",
+      "external_urls": {"spotify": "https://open.spotify.com/episode/episode1"},
+      "description": "Synthetic search fixture episode",
+      "html_description": "Synthetic search fixture episode",
+      "duration_ms": 1800000,
+      "release_date": "2026-01-01",
+      "release_date_precision": "day",
+      "languages": ["en"],
+      "explicit": false,
+      "is_externally_hosted": false,
+      "is_playable": true,
+      "images": []
+    }]
+  }
+}

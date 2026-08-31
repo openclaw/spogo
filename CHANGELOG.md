@@ -7,6 +7,10 @@
 - Refresh Go dependencies, including Kong, SweetCookie, SQLite, and formatting tools, and build with Go 1.26.7 for compatibility with GitHub's default CodeQL runner
 - Refresh GitHub Actions and CI tool pins, and build documentation with Node.js 26
 
+### Fixed
+
+- Decode Spotify's plural search result containers in the Web API client and Connect fallback, thanks @VACInc
+
 ## 0.10.7 - 2026-08-23
 
 ### Changed

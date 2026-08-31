@@ -89,6 +89,8 @@ Browse the catalog. Each subcommand takes a query plus `--limit N` and `--offset
 | `spogo search show <query>` | Podcast shows. |
 | `spogo search episode <query>` | Podcast episodes. |
 
+Web API search and Connect's Web API fallback read Spotify's plural result containers (`tracks`, `albums`, `artists`, `playlists`, `shows`, `episodes`); CLI search types stay singular.
+
 ## info
 
 Fetch a single item by ID, URI, or URL.
