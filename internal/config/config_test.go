@@ -1,10 +1,13 @@
 package config
 
 import (
+	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func isolateConfigHome(t *testing.T) string {
@@ -170,6 +173,130 @@ func TestSaveInvalidDir(t *testing.T) {
 	path := filepath.Join(file, "config.toml")
 	if err := Save(path, Default()); err == nil {
 		t.Fatalf("expected error")
+	}
+}
+
+func TestUpdateErrorsAndDefaultPath(t *testing.T) {
+	if _, err := Update(context.Background(), filepath.Join(t.TempDir(), "config.toml"), nil); err == nil {
+		t.Fatal("expected nil update error")
+	}
+
+	isolateConfigHome(t)
+	wantErr := context.Canceled
+	if _, err := Update(context.Background(), "", func(*Config) error { return wantErr }); !errors.Is(err, wantErr) {
+		t.Fatalf("callback error = %v, want %v", err, wantErr)
+	}
+	updated, err := Update(context.Background(), "", func(cfg *Config) error {
+		cfg.SetProfile("default", Profile{Market: "US"})
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("default-path update: %v", err)
+	}
+	if got := updated.Profile("default").Market; got != "US" {
+		t.Fatalf("updated market = %q", got)
+	}
+}
+
+func TestUpdateLoadAndSaveErrors(t *testing.T) {
+	dir := t.TempDir()
+	invalidPath := filepath.Join(dir, "invalid.toml")
+	if err := os.WriteFile(invalidPath, []byte("not=toml=\""), 0o644); err != nil {
+		t.Fatalf("write invalid config: %v", err)
+	}
+	if _, err := Update(context.Background(), invalidPath, func(*Config) error { return nil }); err == nil {
+		t.Fatal("expected load error")
+	}
+
+	savePath := filepath.Join(dir, "save-error.toml")
+	if _, err := Update(context.Background(), savePath, func(*Config) error {
+		if err := os.Mkdir(savePath, 0o755); err != nil {
+			return err
+		}
+		return nil
+	}); err == nil {
+		t.Fatal("expected save error")
+	}
+}
+
+func TestUpdateHonorsLockCancellation(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	firstEntered := make(chan struct{})
+	releaseFirst := make(chan struct{})
+	firstDone := make(chan error, 1)
+	go func() {
+		_, err := Update(context.Background(), path, func(*Config) error {
+			close(firstEntered)
+			<-releaseFirst
+			return nil
+		})
+		firstDone <- err
+	}()
+	<-firstEntered
+
+	waitCtx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+	defer cancel()
+	if _, err := Update(waitCtx, path, func(*Config) error { return nil }); !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("lock wait error = %v", err)
+	}
+	close(releaseFirst)
+	if err := <-firstDone; err != nil {
+		t.Fatalf("first update: %v", err)
+	}
+}
+
+func TestUpdateSerializesDifferentProfileWrites(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	if err := Save(path, Default()); err != nil {
+		t.Fatalf("save initial config: %v", err)
+	}
+
+	firstEntered := make(chan struct{})
+	releaseFirst := make(chan struct{})
+	firstDone := make(chan error, 1)
+	go func() {
+		_, err := Update(context.Background(), path, func(cfg *Config) error {
+			cfg.SetProfile("personal", Profile{Auth: "oauth", SpotifyClientID: "personal-client"})
+			close(firstEntered)
+			<-releaseFirst
+			return nil
+		})
+		firstDone <- err
+	}()
+	<-firstEntered
+
+	secondEntered := make(chan struct{})
+	secondDone := make(chan error, 1)
+	go func() {
+		_, err := Update(context.Background(), path, func(cfg *Config) error {
+			close(secondEntered)
+			cfg.SetProfile("work", Profile{Auth: "oauth", SpotifyClientID: "work-client"})
+			return nil
+		})
+		secondDone <- err
+	}()
+	select {
+	case <-secondEntered:
+		t.Fatal("second profile update bypassed the config lock")
+	case <-time.After(100 * time.Millisecond):
+	}
+	close(releaseFirst)
+	if err := <-firstDone; err != nil {
+		t.Fatalf("first update: %v", err)
+	}
+	if err := <-secondDone; err != nil {
+		t.Fatalf("second update: %v", err)
+	}
+
+	loaded, err := Load(path)
+	if err != nil {
+		t.Fatalf("load final config: %v", err)
+	}
+	if got := loaded.Profile("personal").SpotifyClientID; got != "personal-client" {
+		t.Fatalf("personal profile lost: %q", got)
+	}
+	if got := loaded.Profile("work").SpotifyClientID; got != "work-client" {
+		t.Fatalf("work profile lost: %q", got)
 	}
 }
 

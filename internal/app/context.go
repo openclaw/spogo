@@ -57,12 +57,15 @@ func (c *Context) SaveProfile(profile config.Profile) error {
 	if c.Config == nil {
 		return errors.New("nil config")
 	}
-	cfg := c.Config
-	cfg.SetProfile(c.ProfileKey, profile)
-	cfg.DefaultProfile = c.ProfileKey
-	if err := config.Save(c.ConfigPath, cfg); err != nil {
+	cfg, err := config.Update(c.CommandContext(), c.ConfigPath, func(cfg *config.Config) error {
+		cfg.SetProfile(c.ProfileKey, profile)
+		cfg.DefaultProfile = c.ProfileKey
+		return nil
+	})
+	if err != nil {
 		return err
 	}
+	c.Config = cfg
 	c.Profile = profile
 	return nil
 }

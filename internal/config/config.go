@@ -1,16 +1,22 @@
 package config
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
+	"time"
 
+	"github.com/gofrs/flock"
 	"github.com/pelletier/go-toml/v2"
 )
 
 const (
 	DefaultProfile = "default"
 	DefaultConfig  = "config.toml"
+	updateLockWait = 25 * time.Millisecond
 )
 
 type Config struct {
@@ -82,6 +88,54 @@ func Save(path string, cfg *Config) error {
 		return err
 	}
 	return os.WriteFile(path, data, 0o644)
+}
+
+// Update serializes a load-modify-save transaction for the shared config file.
+func Update(ctx context.Context, path string, fn func(*Config) error) (*Config, error) {
+	if fn == nil {
+		return nil, errors.New("nil config update")
+	}
+	if path == "" {
+		var err error
+		path, err = DefaultPath()
+		if err != nil {
+			return nil, err
+		}
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return nil, err
+	}
+	configLock := flock.New(path+".lock", flock.SetPermissions(0o600))
+	locked, err := configLock.TryLockContext(ctx, updateLockWait)
+	if err != nil {
+		_ = configLock.Close()
+		return nil, fmt.Errorf("lock config: %w", err)
+	}
+	if !locked {
+		_ = configLock.Close()
+		return nil, fmt.Errorf("lock config: %w", ctx.Err())
+	}
+	defer func() {
+		_ = configLock.Unlock()
+		_ = configLock.Close()
+	}()
+	if runtime.GOOS != "windows" {
+		if err := os.Chmod(configLock.Path(), 0o600); err != nil {
+			return nil, err
+		}
+	}
+
+	cfg, err := Load(path)
+	if err != nil {
+		return nil, err
+	}
+	if err := fn(cfg); err != nil {
+		return nil, err
+	}
+	if err := Save(path, cfg); err != nil {
+		return nil, err
+	}
+	return cfg, nil
 }
 
 func Default() *Config {
