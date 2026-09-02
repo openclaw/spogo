@@ -230,6 +230,37 @@ func TestAuthOAuthClearMissingKeepsCookieSelection(t *testing.T) {
 	}
 }
 
+func TestAuthOAuthClearKeepsTokenWhenProfileUpdateFails(t *testing.T) {
+	ctx, _, _ := testutil.NewTestContext(t, output.FormatPlain)
+	root := t.TempDir()
+	ctx.Config = config.Default()
+	ctx.ConfigPath = filepath.Join(root, "config.toml")
+	ctx.ProfileKey = "default"
+	ctx.Profile = config.Profile{Auth: "oauth", SpotifyClientID: "client-id"}
+	tokenPath := ctx.ResolveOAuthTokenPath()
+	if err := spotify.SaveOAuthToken(tokenPath, spotify.OAuthToken{
+		AccessToken:  "access",
+		RefreshToken: "refresh",
+		ExpiresAt:    time.Now().Add(time.Hour),
+		ClientID:     "client-id",
+	}); err != nil {
+		t.Fatalf("save token: %v", err)
+	}
+	if err := os.Mkdir(ctx.ConfigPath, 0o755); err != nil {
+		t.Fatalf("block config save: %v", err)
+	}
+
+	if err := (&AuthOAuthClearCmd{}).Run(ctx); err == nil {
+		t.Fatal("expected profile update failure")
+	}
+	if ctx.Profile.Auth != "oauth" {
+		t.Fatalf("auth changed despite failed profile update: %q", ctx.Profile.Auth)
+	}
+	if _, err := spotify.LoadOAuthToken(tokenPath); err != nil {
+		t.Fatalf("token removed before profile update succeeded: %v", err)
+	}
+}
+
 func TestAuthOAuthLoginTimeoutAndBrowserError(t *testing.T) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
