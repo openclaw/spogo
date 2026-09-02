@@ -7,6 +7,10 @@ import (
 
 func newConnectClientForTests(transport http.RoundTripper) *ConnectClient {
 	client := &http.Client{Transport: transport}
+	web, err := NewClient(Options{TokenProvider: staticTokenProvider{}, HTTPClient: client})
+	if err != nil {
+		panic(err)
+	}
 	session := &connectSession{
 		client:       client,
 		token:        Token{AccessToken: "access", ExpiresAt: time.Now().Add(time.Hour), ClientID: "client"},
@@ -16,7 +20,7 @@ func newConnectClientForTests(transport http.RoundTripper) *ConnectClient {
 		deviceID:     "device",
 	}
 	hashes := &hashResolver{client: client, session: session, hashes: map[string]string{}}
-	return &ConnectClient{client: client, session: session, hashes: hashes}
+	return &ConnectClient{client: client, session: session, hashes: hashes, web: web}
 }
 
 func newRegisteredConnectClientForTests(transport http.RoundTripper) *ConnectClient {

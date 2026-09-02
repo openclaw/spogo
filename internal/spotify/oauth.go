@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -326,8 +327,13 @@ func ValidateOAuthRedirectURI(raw string) error {
 	if host != "127.0.0.1" && host != "::1" {
 		return errors.New("spotify CLI redirect URI must use 127.0.0.1 or [::1], not localhost or a non-loopback host")
 	}
-	if parsed.Port() == "" {
+	port := parsed.Port()
+	if port == "" {
 		return errors.New("spotify CLI redirect URI must include a port")
+	}
+	portNumber, err := strconv.Atoi(port)
+	if err != nil || portNumber < 1 || portNumber > 65535 {
+		return errors.New("spotify CLI redirect URI must use a port from 1 to 65535")
 	}
 	if parsed.RawQuery != "" || parsed.Fragment != "" || parsed.User != nil {
 		return errors.New("spotify CLI redirect URI cannot include userinfo, a query, or a fragment")

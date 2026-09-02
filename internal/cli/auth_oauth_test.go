@@ -417,6 +417,31 @@ func TestAuthOAuthClearKeepsTokenWhenProfileUpdateFails(t *testing.T) {
 	}
 }
 
+func TestAuthOAuthClearResetsStoredOAuthSelectionDespiteRuntimeOverride(t *testing.T) {
+	ctx, _, _ := testutil.NewTestContext(t, output.FormatPlain)
+	ctx.Config = config.Default()
+	ctx.ConfigPath = filepath.Join(t.TempDir(), "config.toml")
+	ctx.ProfileKey = "default"
+	stored := config.Profile{Auth: "oauth", SpotifyClientID: "client-id"}
+	ctx.Config.SetProfile(ctx.ProfileKey, stored)
+	if err := config.Save(ctx.ConfigPath, ctx.Config); err != nil {
+		t.Fatalf("save config: %v", err)
+	}
+	ctx.Profile = stored
+	ctx.Profile.Auth = "cookies"
+
+	if err := (&AuthOAuthClearCmd{}).Run(ctx); err != nil {
+		t.Fatalf("clear with runtime override: %v", err)
+	}
+	loaded, err := config.Load(ctx.ConfigPath)
+	if err != nil {
+		t.Fatalf("load saved config: %v", err)
+	}
+	if got := loaded.Profile(ctx.ProfileKey).Auth; got != "" {
+		t.Fatalf("expected stored OAuth selection cleared, got %q", got)
+	}
+}
+
 func TestAuthOAuthLoginTimeoutAndBrowserError(t *testing.T) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {

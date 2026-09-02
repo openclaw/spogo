@@ -82,6 +82,7 @@ func TestValidateOAuthRedirectURI(t *testing.T) {
 		"http://localhost:8888/callback",
 		"https://127.0.0.1:8888/callback",
 		"http://127.0.0.1/callback",
+		"http://127.0.0.1:0/callback",
 		"http://192.168.1.2:8888/callback",
 		"http://127.0.0.1:8888/callback?token=x",
 	}

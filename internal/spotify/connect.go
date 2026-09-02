@@ -30,7 +30,6 @@ type ConnectClient struct {
 	hashes       *hashResolver
 	webMu        sync.Mutex
 	web          *Client
-	searchURL    string
 	searchClient *http.Client
 
 	cache *connectCacheStore
