@@ -116,6 +116,157 @@ func TestAuthOAuthLoginCmd(t *testing.T) {
 	}
 }
 
+func TestAuthOAuthLoginAndClearSerializeLifecycle(t *testing.T) {
+	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"access_token":  "access",
+			"refresh_token": "refresh",
+			"token_type":    "Bearer",
+			"scope":         "user-library-read",
+			"expires_in":    3600,
+		})
+	}))
+	defer tokenServer.Close()
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("reserve port: %v", err)
+	}
+	redirectURI := "http://" + listener.Addr().String() + "/callback"
+	_ = listener.Close()
+
+	oldProvider := newOAuthTokenProvider
+	newOAuthTokenProvider = func(opts spotify.OAuthOptions) (*spotify.OAuthTokenProvider, error) {
+		opts.AccountsURL = tokenServer.URL
+		return spotify.NewOAuthTokenProvider(opts)
+	}
+	t.Cleanup(func() { newOAuthTokenProvider = oldProvider })
+
+	oldOpen := openOAuthBrowser
+	openOAuthBrowser = func(raw string) error {
+		parsed, parseErr := url.Parse(raw)
+		if parseErr != nil {
+			return parseErr
+		}
+		state := parsed.Query().Get("state")
+		go func() {
+			callbackURL := redirectURI + "?code=***&state=" + url.QueryEscape(state)
+			for range 50 {
+				resp, getErr := http.Get(callbackURL) //nolint:gosec // loopback test callback
+				if getErr == nil {
+					_ = resp.Body.Close()
+					return
+				}
+				time.Sleep(10 * time.Millisecond)
+			}
+		}()
+		return nil
+	}
+	t.Cleanup(func() { openOAuthBrowser = oldOpen })
+
+	root := t.TempDir()
+	configPath := filepath.Join(root, "config.toml")
+	initialConfig := config.Default()
+	initialConfig.SetProfile("default", config.Profile{Auth: "cookies"})
+	if err := config.Save(configPath, initialConfig); err != nil {
+		t.Fatalf("save initial config: %v", err)
+	}
+
+	loginConfig, err := config.Load(configPath)
+	if err != nil {
+		t.Fatalf("load login config: %v", err)
+	}
+	loginCtx, _, _ := testutil.NewTestContext(t, output.FormatPlain)
+	loginCtx.Config = loginConfig
+	loginCtx.ConfigPath = configPath
+	loginCtx.ProfileKey = "default"
+	loginCtx.Profile = loginConfig.Profile("default")
+
+	// Load clear's context before login commits so it holds the stale cookie profile
+	// that triggered the original token/profile race.
+	clearConfig, err := config.Load(configPath)
+	if err != nil {
+		t.Fatalf("load clear config: %v", err)
+	}
+	clearCtx, _, _ := testutil.NewTestContext(t, output.FormatPlain)
+	clearCtx.Config = clearConfig
+	clearCtx.ConfigPath = configPath
+	clearCtx.ProfileKey = "default"
+	clearCtx.Profile = clearConfig.Profile("default")
+
+	tokenSaved := make(chan struct{})
+	releaseLogin := make(chan struct{})
+	oldAfterExchange := afterOAuthTokenExchange
+	afterOAuthTokenExchange = func() {
+		close(tokenSaved)
+		<-releaseLogin
+	}
+	t.Cleanup(func() {
+		afterOAuthTokenExchange = oldAfterExchange
+		select {
+		case <-releaseLogin:
+		default:
+			close(releaseLogin)
+		}
+	})
+
+	loginDone := make(chan error, 1)
+	go func() {
+		loginDone <- (&AuthOAuthLoginCmd{
+			ClientID:    "client-id",
+			RedirectURI: redirectURI,
+			WaitTimeout: 2 * time.Second,
+		}).Run(loginCtx)
+	}()
+	select {
+	case <-tokenSaved:
+	case <-time.After(2 * time.Second):
+		t.Fatal("login did not reach the token/profile transition")
+	}
+
+	clearStarted := make(chan struct{})
+	clearDone := make(chan error, 1)
+	go func() {
+		close(clearStarted)
+		clearDone <- (&AuthOAuthClearCmd{}).Run(clearCtx)
+	}()
+	<-clearStarted
+	select {
+	case clearErr := <-clearDone:
+		t.Fatalf("clear bypassed the login lifecycle lock: %v", clearErr)
+	case <-time.After(100 * time.Millisecond):
+	}
+	close(releaseLogin)
+
+	select {
+	case loginErr := <-loginDone:
+		if loginErr != nil {
+			t.Fatalf("login: %v", loginErr)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("login did not finish")
+	}
+	select {
+	case clearErr := <-clearDone:
+		if clearErr != nil {
+			t.Fatalf("clear: %v", clearErr)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("clear did not finish")
+	}
+
+	finalConfig, err := config.Load(configPath)
+	if err != nil {
+		t.Fatalf("load final config: %v", err)
+	}
+	if auth := finalConfig.Profile("default").Auth; auth != "" {
+		t.Fatalf("final auth = %q; want cookie fallback", auth)
+	}
+	if _, err := os.Stat(loginCtx.ResolveOAuthTokenPath()); !os.IsNotExist(err) {
+		t.Fatalf("final token cache still exists: %v", err)
+	}
+}
+
 func TestAuthOAuthStatusAndClearCmd(t *testing.T) {
 	ctx, out, _ := testutil.NewTestContext(t, output.FormatJSON)
 	ctx.Config = config.Default()
@@ -222,6 +373,11 @@ func TestAuthOAuthClearMissingKeepsCookieSelection(t *testing.T) {
 	ctx.ConfigPath = filepath.Join(t.TempDir(), "config.toml")
 	ctx.ProfileKey = "default"
 	ctx.Profile = config.Profile{Auth: "cookies"}
+	ctx.Config = config.Default()
+	ctx.Config.SetProfile("default", ctx.Profile)
+	if err := config.Save(ctx.ConfigPath, ctx.Config); err != nil {
+		t.Fatalf("save config: %v", err)
+	}
 	if err := (&AuthOAuthClearCmd{}).Run(ctx); err != nil {
 		t.Fatalf("clear missing: %v", err)
 	}
