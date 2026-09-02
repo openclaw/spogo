@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/steipete/spogo/internal/app"
+	"github.com/steipete/spogo/internal/config"
 	"github.com/steipete/spogo/internal/spotify"
 )
 
@@ -38,8 +39,9 @@ type oauthStatusPayload struct {
 const defaultOAuthRedirectURI = "http://127.0.0.1:8888/callback"
 
 var (
-	openOAuthBrowser      = openBrowserURL
-	newOAuthTokenProvider = spotify.NewOAuthTokenProvider
+	openOAuthBrowser        = openBrowserURL
+	newOAuthTokenProvider   = spotify.NewOAuthTokenProvider
+	afterOAuthTokenExchange = func() {}
 )
 
 func (cmd *AuthOAuthLoginCmd) Run(ctx *app.Context) error {
@@ -165,22 +167,32 @@ func (cmd *AuthOAuthLoginCmd) Run(ctx *app.Context) error {
 	if callback.err != nil {
 		return callback.err
 	}
-	if _, err := provider.ExchangeCode(ctx.CommandContext(), callback.code, verifier); err != nil {
+	path := ctx.ResolveOAuthTokenPath()
+	if err := spotify.WithOAuthLifecycleLock(ctx.CommandContext(), path, func() error {
+		profile, err := reloadOAuthProfile(ctx)
+		if err != nil {
+			return err
+		}
+		if _, err := provider.ExchangeCode(ctx.CommandContext(), callback.code, verifier); err != nil {
+			return err
+		}
+		afterOAuthTokenExchange()
+		profile.Auth = "oauth"
+		profile.SpotifyClientID = clientID
+		profile.SpotifyRedirectURI = redirectURI
+		if err := ctx.SaveProfile(profile); err != nil {
+			return fmt.Errorf("oauth token saved but profile update failed: %w", err)
+		}
+		return nil
+	}); err != nil {
 		return err
-	}
-	profile := ctx.Profile
-	profile.Auth = "oauth"
-	profile.SpotifyClientID = clientID
-	profile.SpotifyRedirectURI = redirectURI
-	if err := ctx.SaveProfile(profile); err != nil {
-		return fmt.Errorf("oauth token saved but profile update failed: %w", err)
 	}
 	payload := map[string]any{
 		"status":       "ok",
 		"auth":         "oauth",
 		"client_id":    clientID,
 		"redirect_uri": redirectURI,
-		"token_path":   ctx.ResolveOAuthTokenPath(),
+		"token_path":   path,
 	}
 	return ctx.Output.Emit(payload, []string{"ok\toauth"}, []string{
 		"Spotify OAuth login complete.",
@@ -228,18 +240,33 @@ func (cmd *AuthOAuthStatusCmd) Run(ctx *app.Context) error {
 
 func (cmd *AuthOAuthClearCmd) Run(ctx *app.Context) error {
 	path := ctx.ResolveOAuthTokenPath()
-	profile := ctx.Profile
-	if selectedAuth(profile.Auth) == "oauth" {
-		profile.Auth = ""
-		if err := ctx.SaveProfile(profile); err != nil {
+	if err := spotify.WithOAuthLifecycleLock(ctx.CommandContext(), path, func() error {
+		profile, err := reloadOAuthProfile(ctx)
+		if err != nil {
 			return err
 		}
-	}
-	if err := spotify.ClearOAuthToken(path); err != nil {
+		if selectedAuth(profile.Auth) == "oauth" {
+			profile.Auth = ""
+			if err := ctx.SaveProfile(profile); err != nil {
+				return err
+			}
+		}
+		return spotify.ClearOAuthToken(path)
+	}); err != nil {
 		return err
 	}
 	payload := map[string]string{"status": "ok", "token_path": path}
 	return ctx.Output.Emit(payload, []string{"ok"}, []string{"Cleared Spotify OAuth token cache."})
+}
+
+func reloadOAuthProfile(ctx *app.Context) (config.Profile, error) {
+	cfg, err := config.Load(ctx.ConfigPath)
+	if err != nil {
+		return config.Profile{}, fmt.Errorf("reload oauth profile: %w", err)
+	}
+	ctx.Config = cfg
+	ctx.Profile = cfg.Profile(ctx.ProfileKey)
+	return ctx.Profile, nil
 }
 
 func selectedAuth(auth string) string {

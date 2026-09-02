@@ -271,6 +271,50 @@ func TestOAuthCacheLockHonorsContextCancellation(t *testing.T) {
 	releaseOAuthCacheLock(nil)
 }
 
+func TestOAuthLifecycleLockSerializesAndPropagates(t *testing.T) {
+	if err := WithOAuthLifecycleLock(context.Background(), "", func() error { return nil }); err == nil {
+		t.Fatal("expected empty path error")
+	}
+
+	path := filepath.Join(t.TempDir(), "token.json")
+	entered := make(chan struct{})
+	release := make(chan struct{})
+	t.Cleanup(func() {
+		select {
+		case <-release:
+		default:
+			close(release)
+		}
+	})
+	firstDone := make(chan error, 1)
+	go func() {
+		firstDone <- WithOAuthLifecycleLock(context.Background(), path, func() error {
+			close(entered)
+			<-release
+			return nil
+		})
+	}()
+	<-entered
+
+	waitCtx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+	if err := WithOAuthLifecycleLock(waitCtx, path, func() error {
+		t.Fatal("second lifecycle transition entered while the first held the lock")
+		return nil
+	}); !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("expected lifecycle lock timeout, got %v", err)
+	}
+	close(release)
+	if err := <-firstDone; err != nil {
+		t.Fatalf("first lifecycle transition: %v", err)
+	}
+
+	wantErr := errors.New("transition failed")
+	if err := WithOAuthLifecycleLock(context.Background(), path, func() error { return wantErr }); !errors.Is(err, wantErr) {
+		t.Fatalf("expected callback error, got %v", err)
+	}
+}
+
 func TestOAuthProviderPropagatesCacheLockCancellation(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "oauth", "default.json")
 	cacheLock, err := acquireOAuthCacheLock(context.Background(), path)
