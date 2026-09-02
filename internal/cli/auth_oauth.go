@@ -228,15 +228,15 @@ func (cmd *AuthOAuthStatusCmd) Run(ctx *app.Context) error {
 
 func (cmd *AuthOAuthClearCmd) Run(ctx *app.Context) error {
 	path := ctx.ResolveOAuthTokenPath()
-	if err := spotify.ClearOAuthToken(path); err != nil {
-		return err
-	}
 	profile := ctx.Profile
 	if selectedAuth(profile.Auth) == "oauth" {
 		profile.Auth = ""
 		if err := ctx.SaveProfile(profile); err != nil {
 			return err
 		}
+	}
+	if err := spotify.ClearOAuthToken(path); err != nil {
+		return err
 	}
 	payload := map[string]string{"status": "ok", "token_path": path}
 	return ctx.Output.Emit(payload, []string{"ok"}, []string{"Cleared Spotify OAuth token cache."})
