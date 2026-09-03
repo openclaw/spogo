@@ -2,11 +2,13 @@ package config
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/gofrs/flock"
@@ -204,7 +206,36 @@ func OAuthTokenPath(configPath, profile string) string {
 		return ""
 	}
 	base := filepath.Dir(configPath)
-	return filepath.Join(base, "oauth", profile+".json")
+	return filepath.Join(base, "oauth", oauthProfileFilename(profile))
+}
+
+func oauthProfileFilename(profile string) string {
+	if isPortableProfileFilename(profile) {
+		return profile + ".json"
+	}
+	return "~" + hex.EncodeToString([]byte(profile)) + ".json"
+}
+
+func isPortableProfileFilename(profile string) bool {
+	if profile == "" || profile == "." || profile == ".." || strings.HasSuffix(profile, ".") {
+		return false
+	}
+	for _, char := range profile {
+		if (char >= 'a' && char <= 'z') || (char >= '0' && char <= '9') ||
+			char == '-' || char == '_' || char == '.' {
+			continue
+		}
+		return false
+	}
+	stem := strings.ToUpper(strings.SplitN(profile, ".", 2)[0])
+	if stem == "CON" || stem == "PRN" || stem == "AUX" || stem == "NUL" {
+		return false
+	}
+	if len(stem) == 4 && (strings.HasPrefix(stem, "COM") || strings.HasPrefix(stem, "LPT")) &&
+		stem[3] >= '1' && stem[3] <= '9' {
+		return false
+	}
+	return true
 }
 
 func (c *Config) normalize() {

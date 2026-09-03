@@ -126,6 +126,8 @@ OAuth tokens are stored per profile under the config directory:
 <config-dir>/spogo/oauth/<profile>.json
 ```
 
+Profile names that are not portable lowercase filename segments are encoded before deriving the token and lock filenames, so separators, traversal components, Windows-reserved names, and case variants cannot escape or alias within the OAuth directory.
+
 The OAuth directory is mode `0700` and token file is mode `0600` on POSIX systems. Writes use a same-directory temporary file, file sync, and atomic rename. spogo refuses to load a token file that is readable or writable by group/other users.
 
 Treat the token cache as a credential. Do not copy it into source control, logs, shell history, or CI artifacts.

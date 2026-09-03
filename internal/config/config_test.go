@@ -132,6 +132,48 @@ func TestOAuthTokenPath(t *testing.T) {
 	}
 }
 
+func TestOAuthTokenPathContainsUnsafeProfiles(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "spogo", "config.toml")
+	oauthDir := filepath.Join(filepath.Dir(configPath), "oauth")
+	unsafeProfiles := []string{
+		"../other",
+		"work/personal",
+		`work\personal`,
+		".",
+		"..",
+		"profile.",
+		"CON",
+		"com1.txt",
+		"personal account",
+		"00a ",
+		"00G ",
+		"WORK",
+		"Work",
+	}
+	seen := map[string]string{}
+	for _, profile := range unsafeProfiles {
+		path := OAuthTokenPath(configPath, profile)
+		if filepath.Dir(path) != oauthDir {
+			t.Fatalf("profile %q escaped OAuth directory: %s", profile, path)
+		}
+		name := filepath.Base(path)
+		if !strings.HasPrefix(name, "~") || filepath.Ext(name) != ".json" {
+			t.Fatalf("profile %q was not safely encoded: %s", profile, name)
+		}
+		if strings.ContainsAny(name, `/\`) {
+			t.Fatalf("profile %q retained a path separator: %s", profile, name)
+		}
+		collisionKey := strings.ToLower(name)
+		if previous, ok := seen[collisionKey]; ok {
+			t.Fatalf("profiles %q and %q collided at %s", previous, profile, name)
+		}
+		seen[collisionKey] = profile
+	}
+	if got := filepath.Base(OAuthTokenPath(configPath, "work.prod-1")); got != "work.prod-1.json" {
+		t.Fatalf("portable profile path changed: %s", got)
+	}
+}
+
 func TestLoadInvalid(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "bad.toml")
