@@ -4,7 +4,7 @@
 
 ### Changed
 
-- Refresh Go dependencies, including Kong, SweetCookie, SQLite, and formatting tools, and build with Go 1.26.7 for compatibility with GitHub's default CodeQL runner
+- Refresh Go dependencies, including Kong, SweetCookie, SQLite, crypto, and formatting tools, and select Go 1.26.8 while retaining Go 1.26.7 support
 - Refresh GitHub Actions and CI tool pins, and build documentation with Node.js 26
 
 ### Fixed
