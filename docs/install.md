@@ -21,7 +21,7 @@ That's it — the formula pulls a signed binary from the latest GitHub release.
 go install github.com/steipete/spogo/cmd/spogo@latest
 ```
 
-Builds from source with a minimum of Go 1.26.7. The module selects Go 1.26.8 for builds unless a newer local toolchain is installed.
+Builds from source with a minimum of Go 1.26.7.
 
 ## Pre-built release binaries
 
@@ -34,6 +34,8 @@ spogo --version
 ```
 
 ## Build from source
+
+With automatic toolchain selection enabled, checkout builds use the preferred Go 1.26.8 toolchain unless a newer local toolchain is installed.
 
 ```bash
 git clone https://github.com/openclaw/spogo.git
