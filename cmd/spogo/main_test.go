@@ -9,8 +9,11 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/steipete/spogo/internal/config"
 	"github.com/steipete/spogo/internal/cookies"
+	"github.com/steipete/spogo/internal/spotify"
 	"github.com/steipete/sweetcookie"
 )
 
@@ -188,6 +191,39 @@ func TestRunAuthStatusWithoutCookiesReturnsAuthExitCode(t *testing.T) {
 	errOut := &bytes.Buffer{}
 	configPath := filepath.Join(t.TempDir(), "config.toml")
 	code := run([]string{"--config", configPath, "--no-input", "auth", "status"}, out, errOut)
+	if code != 3 {
+		t.Fatalf("expected 3, got %d; out=%q err=%q", code, out.String(), errOut.String())
+	}
+}
+
+func TestRunOAuthStatusCommandName(t *testing.T) {
+	out := &bytes.Buffer{}
+	errOut := &bytes.Buffer{}
+	configPath := filepath.Join(t.TempDir(), "config.toml")
+	code := run([]string{"--config", configPath, "--plain", "auth", "oauth", "status"}, out, errOut)
+	if code != 0 {
+		t.Fatalf("expected 0, got %d; out=%q err=%q", code, out.String(), errOut.String())
+	}
+}
+
+func TestRunOAuthStatusMismatchReturnsAuthExitCode(t *testing.T) {
+	out := &bytes.Buffer{}
+	errOut := &bytes.Buffer{}
+	configPath := filepath.Join(t.TempDir(), "config.toml")
+	cfg := config.Default()
+	cfg.SetProfile("default", config.Profile{Auth: "oauth", SpotifyClientID: "configured-client"})
+	if err := config.Save(configPath, cfg); err != nil {
+		t.Fatalf("save config: %v", err)
+	}
+	if err := spotify.SaveOAuthToken(config.OAuthTokenPath(configPath, "default"), spotify.OAuthToken{
+		AccessToken:  "access",
+		RefreshToken: "refresh",
+		ExpiresAt:    time.Now().Add(time.Hour),
+		ClientID:     "other-client",
+	}); err != nil {
+		t.Fatal("save token:", err)
+	}
+	code := run([]string{"--config", configPath, "--plain", "auth", "oauth", "status"}, out, errOut)
 	if code != 3 {
 		t.Fatalf("expected 3, got %d; out=%q err=%q", code, out.String(), errOut.String())
 	}

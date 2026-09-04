@@ -139,11 +139,12 @@ func TestPathfinderFallbackToWeb(t *testing.T) {
 				"total":  1,
 			},
 		}
-		return jsonResponse(http.StatusOK, payload), nil
+		response := jsonResponse(http.StatusOK, payload)
+		response.ContentLength = -1
+		return response, nil
 	})
 	client := newConnectClientForTests(transport)
 	client.hashes.hashes["searchDesktop"] = "hash"
-	client.searchURL = "https://search.local/search"
 
 	result, err := client.Search(context.Background(), "track", "song", 1, 0)
 	if err != nil {
@@ -168,11 +169,11 @@ func TestSearchViaWebAPIDefaultClient(t *testing.T) {
 				"total":  1,
 			},
 		}
-		return jsonResponse(http.StatusOK, payload), nil
+		response := jsonResponse(http.StatusOK, payload)
+		response.ContentLength = -1
+		return response, nil
 	})
 	client := newConnectClientForTests(transport)
-	client.searchURL = ""
-	client.searchClient = nil
 
 	result, err := client.searchViaWebAPI(context.Background(), "track", "song", 1, 0)
 	if err != nil {
@@ -186,10 +187,11 @@ func TestSearchViaWebAPIDefaultClient(t *testing.T) {
 func TestSearchViaWebAPIMissingKind(t *testing.T) {
 	transport := roundTripperFunc(func(req *http.Request) (*http.Response, error) {
 		payload := map[string]any{"album": map[string]any{}}
-		return jsonResponse(http.StatusOK, payload), nil
+		response := jsonResponse(http.StatusOK, payload)
+		response.ContentLength = -1
+		return response, nil
 	})
 	client := newConnectClientForTests(transport)
-	client.searchURL = "https://search.local/search"
 
 	if _, err := client.searchViaWebAPI(context.Background(), "track", "song", 1, 0); err == nil {
 		t.Fatalf("expected error")

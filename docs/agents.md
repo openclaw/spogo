@@ -25,11 +25,14 @@ See [Output](output.md) for the full contract.
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Make sure auth still works
+# Make sure the configured cookie store exists
 if ! spogo auth status >/dev/null 2>&1; then
   echo "spogo: cookies missing or stale; re-run 'spogo auth import'" >&2
   exit 3
 fi
+
+# For an OAuth-only Web API profile, inspect local OAuth state instead:
+# spogo --engine web --auth oauth auth oauth status --json
 
 # Capture the currently playing track ID
 track_id=$(spogo status --json | jq -r '.item.id // empty')
@@ -89,7 +92,7 @@ spogo writes nothing to stdout that isn't useful and nothing to stderr unless so
 0 4 * * * /usr/local/bin/spogo library tracks list --limit 1000 --json > "$HOME/snapshots/tracks-$(date +\%F).json" 2>&1
 ```
 
-For headless servers / CI runners, copy a working cookie jar (from a machine where you ran `auth import`) into the runner's spogo config directory rather than trying to import from a browser that doesn't exist.
+For headless servers / CI runners, either copy a working cookie jar (from a machine where you ran `auth import`) into the runner's spogo config directory, or provision an OAuth token cache created by `auth oauth login` for `--engine web --auth oauth`. Both files are credentials. Do not print them or commit them.
 
 ## CI
 
@@ -118,7 +121,7 @@ spogo is a good fit for AI coding agents (Claude Code, Codex, Cursor) because:
 
 - **Self-documenting.** `spogo --help` and `spogo <subcommand> --help` describe the entire surface. The [Spec](spec.md) is short and stable.
 - **Deterministic.** Stable JSON keys mean the agent's parsing doesn't drift across releases.
-- **Safe-ish.** The destructive surface is small (`library tracks remove`, `playlist remove`, `auth clear`). Wrap those behind explicit confirmation in your agent prompt.
+- **Safe-ish.** The destructive surface is small (`library tracks remove`, `playlist remove`, `auth clear`, `auth oauth clear`). Wrap those behind explicit confirmation in your agent prompt.
 
 Recommended agent rules:
 
@@ -129,7 +132,7 @@ Recommended agent rules:
 
 A starter system prompt fragment for an agent:
 
-> You can use the `spogo` CLI to control Spotify. Always pass `--json` and `--no-input`. Read `spogo --help` and `spogo <cmd> --help` before invoking unfamiliar commands. Treat exit code `3` as "needs auth" — surface that to the user, don't try to recover automatically.
+> You can use the `spogo` CLI to control Spotify. Always pass `--json` and `--no-input`. Read `spogo --help` and `spogo <cmd> --help` before invoking unfamiliar commands. Treat exit code `3` as "needs auth". Surface that to the user; do not launch an interactive cookie import or OAuth login automatically.
 
 ## Safety
 

@@ -3,6 +3,7 @@ package app
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 
@@ -17,6 +18,9 @@ const (
 	engineWeb         engineName = "web"
 	engineAuto        engineName = "auto"
 	engineAppleScript engineName = "applescript"
+
+	authCookies = "cookies"
+	authOAuth   = "oauth"
 )
 
 func (c *Context) Spotify() (spotify.API, error) {
@@ -41,7 +45,11 @@ func (c *Context) Spotify() (spotify.API, error) {
 func (c *Context) buildSpotifyClient(source cookies.Source) (spotify.API, error) {
 	switch c.engine() {
 	case engineConnect:
-		return c.newConnectClient(source)
+		webClient, err := c.newWebClient(source)
+		if err != nil {
+			return nil, err
+		}
+		return c.newConnectClient(source, webClient)
 	case engineWeb:
 		return c.newPlaybackFallbackClient(source)
 	case engineAuto:
@@ -59,7 +67,7 @@ func (c *Context) newPlaybackFallbackClient(source cookies.Source) (spotify.API,
 		return nil, err
 	}
 	client := spotify.API(webClient)
-	if connectClient, connectErr := c.newConnectClient(source); connectErr == nil {
+	if connectClient, connectErr := c.newConnectClient(source, webClient); connectErr == nil {
 		client = spotify.NewPlaybackFallbackClient(webClient, connectClient)
 	}
 	return client, nil
@@ -71,7 +79,7 @@ func (c *Context) newAutoClient(source cookies.Source) (spotify.API, error) {
 		return nil, err
 	}
 	client := spotify.API(webClient)
-	if connectClient, connectErr := c.newConnectClient(source); connectErr == nil {
+	if connectClient, connectErr := c.newConnectClient(source, webClient); connectErr == nil {
 		if localClient, localErr := spotify.NewAppleScriptClient(spotify.AppleScriptOptions{}); localErr == nil {
 			client = spotify.NewAutoClient(connectClient, webClient, localClient)
 		} else {
@@ -85,14 +93,14 @@ func (c *Context) newAppleScriptClient(source cookies.Source) (spotify.API, erro
 	var fallback spotify.API
 	if webClient, webErr := c.newWebClient(source); webErr == nil {
 		fallback = webClient
-		if connectClient, connectErr := c.newConnectClient(source); connectErr == nil {
+		if connectClient, connectErr := c.newConnectClient(source, webClient); connectErr == nil {
 			fallback = spotify.NewPlaybackFallbackClient(webClient, connectClient)
 		}
 	}
 	return spotify.NewAppleScriptClient(spotify.AppleScriptOptions{Fallback: fallback})
 }
 
-func (c *Context) newConnectClient(source cookies.Source) (*spotify.ConnectClient, error) {
+func (c *Context) newConnectClient(source cookies.Source, webClient *spotify.Client) (*spotify.ConnectClient, error) {
 	return spotify.NewConnectClient(spotify.ConnectOptions{
 		Source:    source,
 		Market:    c.Profile.Market,
@@ -100,12 +108,31 @@ func (c *Context) newConnectClient(source cookies.Source) (*spotify.ConnectClien
 		Device:    c.Profile.Device,
 		Timeout:   c.Settings.Timeout,
 		CachePath: c.ResolveCachePath(),
+		WebClient: webClient,
 	})
 }
 
 func (c *Context) newWebClient(source cookies.Source) (*spotify.Client, error) {
+	var provider spotify.TokenProvider
+	switch c.auth() {
+	case authCookies:
+		provider = spotify.CookieTokenProvider{Source: source, Timeout: c.Settings.Timeout}
+	case authOAuth:
+		oauthProvider, err := spotify.NewOAuthTokenProvider(spotify.OAuthOptions{
+			ClientID:    c.Profile.SpotifyClientID,
+			RedirectURI: c.Profile.SpotifyRedirectURI,
+			CachePath:   c.ResolveOAuthTokenPath(),
+			HTTPClient:  &http.Client{Timeout: c.EnsureTimeout()},
+		})
+		if err != nil {
+			return nil, err
+		}
+		provider = oauthProvider
+	default:
+		return nil, fmt.Errorf("unknown auth %q (use cookies or oauth)", c.auth())
+	}
 	return spotify.NewClient(spotify.Options{
-		TokenProvider: spotify.CookieTokenProvider{Source: source, Timeout: c.Settings.Timeout},
+		TokenProvider: provider,
 		Market:        c.Profile.Market,
 		Language:      c.Profile.Language,
 		Device:        c.Profile.Device,
@@ -119,6 +146,14 @@ func (c *Context) engine() engineName {
 		return engineConnect
 	}
 	return engine
+}
+
+func (c *Context) auth() string {
+	auth := strings.ToLower(strings.TrimSpace(c.Profile.Auth))
+	if auth == "" {
+		return authCookies
+	}
+	return auth
 }
 
 func (c *Context) cookieSource() (cookies.Source, error) {
