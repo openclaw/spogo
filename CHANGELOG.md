@@ -2,14 +2,14 @@
 
 ## Unreleased
 
+### Highlights
+
+- Restore Web API and Connect-fallback search results by decoding Spotify's plural result containers, thanks @VACInc
+
 ### Changed
 
 - Refresh Go dependencies, including Kong, SweetCookie, SQLite, crypto, and formatting tools, and select Go 1.26.8 while retaining Go 1.26.7 support
 - Refresh GitHub Actions and CI tool pins, and build documentation with Node.js 26
-
-### Fixed
-
-- Decode Spotify's plural search result containers in the Web API client and Connect fallback, thanks @VACInc
 
 ## 0.10.7 - 2026-08-23
 
