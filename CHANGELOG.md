@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### Highlights
+
+- Add optional, local Spotify OAuth PKCE login for the existing Web API commands while keeping browser cookies as the default, thanks @VACInc
+
+### Fixed
+
+- Preserve cookie authentication failures before remote OAuth fallbacks, and retain local Spotify.app playback recovery
+- Keep concurrent cookie and OAuth commands from overwriting newer profile settings or clearing tokens before their config update succeeds
+
+### Changed
+
+- Refresh the SQLite runtime support library and its indirect profiling dependency
+
 ## 0.10.8 - 2026-09-05
 
 ### Highlights
