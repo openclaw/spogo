@@ -13,7 +13,7 @@
 
 ### Changed
 
-- Refresh the SQLite runtime support library and its indirect profiling dependency
+- Refresh the indirect SQLite profiling dependency
 
 ## 0.10.8 - 2026-09-05
 
