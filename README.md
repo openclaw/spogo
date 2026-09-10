@@ -107,8 +107,10 @@ Commands:
 - `queue add|show`
 - `library tracks|albums|artists|playlists`
 - `user top-tracks|history`
-- `playlist create|add|remove|tracks`
+- `playlist create|add|remove|tracks|follow|unfollow|following`
 - `device list|set`
+
+Playlist `follow`, `unfollow`, and `following` accept an ID, URI, or URL and use Spotify's library endpoints. The `follow --public` flag is accepted for compatibility but ignored.
 
 Full spec: `docs/spec.md`.
 

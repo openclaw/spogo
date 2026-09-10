@@ -230,6 +230,26 @@ func (c *ConnectClient) RemoveTracks(ctx context.Context, playlistID string, uri
 	})
 }
 
+func (c *ConnectClient) FollowPlaylist(ctx context.Context, id string, public bool) error {
+	return withWebFallback(c, func(web *Client) error {
+		return web.FollowPlaylist(ctx, id, public)
+	})
+}
+
+func (c *ConnectClient) UnfollowPlaylist(ctx context.Context, id string) error {
+	return withWebFallback(c, func(web *Client) error {
+		return web.UnfollowPlaylist(ctx, id)
+	})
+}
+
+func (c *ConnectClient) IsFollowingPlaylist(ctx context.Context, id string) (bool, error) {
+	web, err := c.webClient()
+	if err != nil {
+		return false, err
+	}
+	return web.IsFollowingPlaylist(ctx, id)
+}
+
 func (c *ConnectClient) GetUsersTopTracks(ctx context.Context, timeRange string, limit, offset int) (TopTracksResult, error) {
 	return c.userTopTracks(ctx, timeRange, limit, offset)
 }

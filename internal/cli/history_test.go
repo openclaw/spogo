@@ -183,7 +183,8 @@ func TestUserHistoryHumanOutputUsesReadableTimestampWithoutAffinityRange(t *test
 	if !strings.HasPrefix(got, "Recently played: 1\nLong Way Home — Gareth Emery · ") {
 		t.Fatalf("unexpected history output %q", got)
 	}
-	if strings.Contains(got, "long_term") || strings.Contains(got, "2026-08-23T22:20:10.967Z") || !strings.Contains(got, "Aug 23, 2026") {
+	wantTimestamp := time.Date(2026, time.August, 23, 22, 20, 10, 967000000, time.UTC).Local().Format("Jan 2, 2006 at 3:04 PM MST")
+	if strings.Contains(got, "long_term") || strings.Contains(got, "2026-08-23T22:20:10.967Z") || !strings.Contains(got, wantTimestamp) {
 		t.Fatalf("history output was not formatted for humans: %q", got)
 	}
 }

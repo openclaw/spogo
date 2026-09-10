@@ -406,6 +406,31 @@ func (c *Client) RemoveTracks(ctx context.Context, playlistID string, uris []str
 	return c.send(ctx, http.MethodDelete, "/playlists/"+playlistID+"/tracks", nil, payload, nil)
 }
 
+func (c *Client) FollowPlaylist(ctx context.Context, id string, public bool) error {
+	params := url.Values{}
+	params.Set("uris", "spotify:playlist:"+id)
+	return c.send(ctx, http.MethodPut, "/me/library", params, nil, nil)
+}
+
+func (c *Client) UnfollowPlaylist(ctx context.Context, id string) error {
+	params := url.Values{}
+	params.Set("uris", "spotify:playlist:"+id)
+	return c.send(ctx, http.MethodDelete, "/me/library", params, nil, nil)
+}
+
+func (c *Client) IsFollowingPlaylist(ctx context.Context, id string) (bool, error) {
+	params := url.Values{}
+	params.Set("uris", "spotify:playlist:"+id)
+	var raw []bool
+	if err := c.get(ctx, "/me/library/contains", params, &raw); err != nil {
+		return false, err
+	}
+	if len(raw) == 0 {
+		return false, errors.New("empty contains response")
+	}
+	return raw[0], nil
+}
+
 func (c *Client) GetUsersTopTracks(ctx context.Context, timeRange string, limit, offset int) (TopTracksResult, error) {
 	params := url.Values{}
 	params.Set("time_range", timeRange)

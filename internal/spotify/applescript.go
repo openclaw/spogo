@@ -299,6 +299,27 @@ func (c *AppleScriptClient) RemoveTracks(ctx context.Context, playlistID string,
 	return ErrUnsupported
 }
 
+func (c *AppleScriptClient) FollowPlaylist(ctx context.Context, id string, public bool) error {
+	if c.fallback != nil {
+		return c.fallback.FollowPlaylist(ctx, id, public)
+	}
+	return ErrUnsupported
+}
+
+func (c *AppleScriptClient) UnfollowPlaylist(ctx context.Context, id string) error {
+	if c.fallback != nil {
+		return c.fallback.UnfollowPlaylist(ctx, id)
+	}
+	return ErrUnsupported
+}
+
+func (c *AppleScriptClient) IsFollowingPlaylist(ctx context.Context, id string) (bool, error) {
+	if c.fallback != nil {
+		return c.fallback.IsFollowingPlaylist(ctx, id)
+	}
+	return false, ErrUnsupported
+}
+
 func (c *AppleScriptClient) GetUsersTopTracks(ctx context.Context, timeRange string, limit, offset int) (TopTracksResult, error) {
 	if c.fallback != nil {
 		return c.fallback.GetUsersTopTracks(ctx, timeRange, limit, offset)

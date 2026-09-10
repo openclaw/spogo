@@ -33,6 +33,9 @@ type API interface {
 	CreatePlaylist(ctx context.Context, name string, public, collaborative bool) (Item, error)
 	AddTracks(ctx context.Context, playlistID string, uris []string) error
 	RemoveTracks(ctx context.Context, playlistID string, uris []string) error
+	FollowPlaylist(ctx context.Context, id string, public bool) error
+	UnfollowPlaylist(ctx context.Context, id string) error
+	IsFollowingPlaylist(ctx context.Context, id string) (bool, error)
 	GetUsersTopTracks(ctx context.Context, timeRange string, limit, offset int) (TopTracksResult, error)
 	GetRecentlyPlayed(ctx context.Context, limit int, after, before int64) (RecentlyPlayedResult, error)
 }

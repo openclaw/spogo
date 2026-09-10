@@ -294,6 +294,24 @@ func (c *autoClient) RemoveTracks(ctx context.Context, playlistID string, uris [
 	})
 }
 
+func (c *autoClient) FollowPlaylist(ctx context.Context, id string, public bool) error {
+	return autoVoid(c, func(api API) error {
+		return api.FollowPlaylist(ctx, id, public)
+	})
+}
+
+func (c *autoClient) UnfollowPlaylist(ctx context.Context, id string) error {
+	return autoVoid(c, func(api API) error {
+		return api.UnfollowPlaylist(ctx, id)
+	})
+}
+
+func (c *autoClient) IsFollowingPlaylist(ctx context.Context, id string) (bool, error) {
+	return autoCall(c, func(api API) (bool, error) {
+		return api.IsFollowingPlaylist(ctx, id)
+	})
+}
+
 func (c *autoClient) GetUsersTopTracks(ctx context.Context, timeRange string, limit, offset int) (TopTracksResult, error) {
 	return autoCall(c, func(api API) (TopTracksResult, error) {
 		return api.GetUsersTopTracks(ctx, timeRange, limit, offset)

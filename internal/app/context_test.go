@@ -461,6 +461,11 @@ func (dummySpotify) CreatePlaylist(context.Context, string, bool, bool) (spotify
 }
 func (dummySpotify) AddTracks(context.Context, string, []string) error    { return nil }
 func (dummySpotify) RemoveTracks(context.Context, string, []string) error { return nil }
+func (dummySpotify) FollowPlaylist(context.Context, string, bool) error   { return nil }
+func (dummySpotify) UnfollowPlaylist(context.Context, string) error       { return nil }
+func (dummySpotify) IsFollowingPlaylist(context.Context, string) (bool, error) {
+	return false, nil
+}
 func (dummySpotify) GetUsersTopTracks(context.Context, string, int, int) (spotify.TopTracksResult, error) {
 	return spotify.TopTracksResult{}, nil
 }

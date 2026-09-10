@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -29,6 +30,19 @@ type PlaylistTracksCmd struct {
 	Playlist string `arg:"" required:"" help:"Playlist ID/URL/URI."`
 	Limit    int    `help:"Limit results." default:"50"`
 	Offset   int    `help:"Offset results." default:"0"`
+}
+
+type PlaylistFollowCmd struct {
+	Playlist string `arg:"" required:"" help:"Playlist ID/URL/URI."`
+	Public   bool   `help:"Accepted for compatibility; ignored by Spotify library endpoints."`
+}
+
+type PlaylistUnfollowCmd struct {
+	Playlist string `arg:"" required:"" help:"Playlist ID/URL/URI."`
+}
+
+type PlaylistFollowingCmd struct {
+	Playlist string `arg:"" required:"" help:"Playlist ID/URL/URI."`
 }
 
 func (cmd *PlaylistCreateCmd) Run(ctx *app.Context) error {
@@ -101,6 +115,63 @@ func (cmd *PlaylistTracksCmd) Run(ctx *app.Context) error {
 	}
 	payload := map[string]any{"total": total, "items": items}
 	return ctx.Output.Emit(payload, plain, human)
+}
+
+func (cmd *PlaylistFollowCmd) Run(ctx *app.Context) error {
+	client, cmdCtx, err := spotifyClient(ctx)
+	if err != nil {
+		return err
+	}
+	playlist, err := spotify.ParseTypedID(cmd.Playlist, "playlist")
+	if err != nil {
+		return err
+	}
+	if err := client.FollowPlaylist(cmdCtx, playlist.ID, cmd.Public); err != nil {
+		return err
+	}
+	name := playlistDisplayName(cmdCtx, client, playlist.ID)
+	return emitOK(ctx, map[string]any{"status": "ok", "id": playlist.ID}, fmt.Sprintf("Followed %s", name))
+}
+
+func (cmd *PlaylistUnfollowCmd) Run(ctx *app.Context) error {
+	client, cmdCtx, err := spotifyClient(ctx)
+	if err != nil {
+		return err
+	}
+	playlist, err := spotify.ParseTypedID(cmd.Playlist, "playlist")
+	if err != nil {
+		return err
+	}
+	if err := client.UnfollowPlaylist(cmdCtx, playlist.ID); err != nil {
+		return err
+	}
+	name := playlistDisplayName(cmdCtx, client, playlist.ID)
+	return emitOK(ctx, map[string]any{"status": "ok", "id": playlist.ID}, fmt.Sprintf("Unfollowed %s", name))
+}
+
+func (cmd *PlaylistFollowingCmd) Run(ctx *app.Context) error {
+	client, cmdCtx, err := spotifyClient(ctx)
+	if err != nil {
+		return err
+	}
+	playlist, err := spotify.ParseTypedID(cmd.Playlist, "playlist")
+	if err != nil {
+		return err
+	}
+	following, err := client.IsFollowingPlaylist(cmdCtx, playlist.ID)
+	if err != nil {
+		return err
+	}
+	payload := map[string]any{"following": following}
+	return ctx.Output.Emit(payload, []string{fmt.Sprint(following)}, []string{fmt.Sprintf("Following: %v", following)})
+}
+
+func playlistDisplayName(ctx context.Context, client spotify.API, id string) string {
+	item, err := client.GetPlaylist(ctx, id)
+	if err != nil || item.Name == "" {
+		return id
+	}
+	return item.Name
 }
 
 func trackURIs(inputs []string) ([]string, error) {

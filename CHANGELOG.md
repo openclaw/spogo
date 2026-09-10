@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Added
+
+- Add `playlist follow`, `playlist unfollow`, and `playlist following` commands accepting playlist IDs, URIs, or URLs
+
+### Fixed
+
+- Use URI-based library endpoints for playlist follow, unfollow, and following status in development mode; retain `--public` for compatibility without changing visibility
+
 ## 0.11.0 - 2026-09-08
 
 ### Highlights

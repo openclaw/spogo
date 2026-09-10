@@ -20,11 +20,14 @@ type ArtistCmd struct {
 }
 
 type PlaylistCmd struct {
-	Info   InfoPlaylistCmd   `kong:"cmd,help='Playlist info.'"`
-	Create PlaylistCreateCmd `kong:"cmd,help='Create playlist.'"`
-	Add    PlaylistAddCmd    `kong:"cmd,help='Add tracks to playlist.'"`
-	Remove PlaylistRemoveCmd `kong:"cmd,help='Remove tracks from playlist.'"`
-	Tracks PlaylistTracksCmd `kong:"cmd,help='List playlist tracks.'"`
+	Info      InfoPlaylistCmd      `kong:"cmd,help='Playlist info.'"`
+	Create    PlaylistCreateCmd    `kong:"cmd,help='Create playlist.'"`
+	Add       PlaylistAddCmd       `kong:"cmd,help='Add tracks to playlist.'"`
+	Remove    PlaylistRemoveCmd    `kong:"cmd,help='Remove tracks from playlist.'"`
+	Tracks    PlaylistTracksCmd    `kong:"cmd,help='List playlist tracks.'"`
+	Follow    PlaylistFollowCmd    `kong:"cmd,help='Follow playlist.'"`
+	Unfollow  PlaylistUnfollowCmd  `kong:"cmd,help='Unfollow playlist.'"`
+	Following PlaylistFollowingCmd `kong:"cmd,help='Check whether you follow a playlist.'"`
 }
 
 type ShowCmd struct {

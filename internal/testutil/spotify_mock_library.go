@@ -76,6 +76,27 @@ func (m *SpotifyMock) RemoveTracks(ctx context.Context, playlistID string, uris 
 	return m.RemoveTracksFn(ctx, playlistID, uris)
 }
 
+func (m *SpotifyMock) FollowPlaylist(ctx context.Context, id string, public bool) error {
+	if m.FollowPlaylistFn == nil {
+		return ErrNotImplemented
+	}
+	return m.FollowPlaylistFn(ctx, id, public)
+}
+
+func (m *SpotifyMock) UnfollowPlaylist(ctx context.Context, id string) error {
+	if m.UnfollowPlaylistFn == nil {
+		return ErrNotImplemented
+	}
+	return m.UnfollowPlaylistFn(ctx, id)
+}
+
+func (m *SpotifyMock) IsFollowingPlaylist(ctx context.Context, id string) (bool, error) {
+	if m.IsFollowingPlaylistFn == nil {
+		return false, ErrNotImplemented
+	}
+	return m.IsFollowingPlaylistFn(ctx, id)
+}
+
 func (m *SpotifyMock) GetUsersTopTracks(ctx context.Context, timeRange string, limit, offset int) (spotify.TopTracksResult, error) {
 	if m.GetUsersTopTracksFn == nil {
 		return spotify.TopTracksResult{}, ErrNotImplemented

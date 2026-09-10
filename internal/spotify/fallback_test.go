@@ -208,6 +208,21 @@ func (a apiStub) RemoveTracks(ctx context.Context, playlistID string, uris []str
 	return nil
 }
 
+func (a apiStub) FollowPlaylist(context.Context, string, bool) error {
+	a.note("FollowPlaylist")
+	return nil
+}
+
+func (a apiStub) UnfollowPlaylist(context.Context, string) error {
+	a.note("UnfollowPlaylist")
+	return nil
+}
+
+func (a apiStub) IsFollowingPlaylist(context.Context, string) (bool, error) {
+	a.note("IsFollowingPlaylist")
+	return false, nil
+}
+
 func (a apiStub) GetUsersTopTracks(ctx context.Context, timeRange string, limit, offset int) (TopTracksResult, error) {
 	a.note("GetUsersTopTracks")
 	if a.topTracksFn != nil {
@@ -483,6 +498,15 @@ func TestFallbackDelegatesToWeb(t *testing.T) {
 	}
 	if err := client.RemoveTracks(ctx, "p1", []string{"spotify:track:t1"}); err != nil {
 		t.Fatalf("remove tracks: %v", err)
+	}
+	if err := client.FollowPlaylist(ctx, "p1", false); err != nil {
+		t.Fatalf("follow playlist: %v", err)
+	}
+	if err := client.UnfollowPlaylist(ctx, "p1"); err != nil {
+		t.Fatalf("unfollow playlist: %v", err)
+	}
+	if _, err := client.IsFollowingPlaylist(ctx, "p1"); err != nil {
+		t.Fatalf("is following playlist: %v", err)
 	}
 	if _, err := client.GetUsersTopTracks(ctx, "long_term", 20, 0); err != nil {
 		t.Fatalf("top tracks: %v", err)
