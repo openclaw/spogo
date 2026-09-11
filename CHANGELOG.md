@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Changed
+
+- Refresh Go crypto, system, synchronization, module, analysis, and formatting dependencies while retaining Go 1.26.7 support
+- Make the listening-history output test independent of the host timezone and verify local-date rollover, thanks @yashiels
+
 ## 0.11.0 - 2026-09-08
 
 ### Highlights
