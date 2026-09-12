@@ -221,8 +221,8 @@ func (c *fallbackClient) RemoveTracks(ctx context.Context, playlistID string, ur
 	})
 }
 
-func (c *fallbackClient) FollowPlaylist(ctx context.Context, id string, public bool) error {
-	return c.web.FollowPlaylist(ctx, id, public)
+func (c *fallbackClient) FollowPlaylist(ctx context.Context, id string) error {
+	return c.web.FollowPlaylist(ctx, id)
 }
 
 func (c *fallbackClient) UnfollowPlaylist(ctx context.Context, id string) error {
@@ -230,9 +230,7 @@ func (c *fallbackClient) UnfollowPlaylist(ctx context.Context, id string) error 
 }
 
 func (c *fallbackClient) IsFollowingPlaylist(ctx context.Context, id string) (bool, error) {
-	return fallbackCall(c, true, func(api API) (bool, error) {
-		return api.IsFollowingPlaylist(ctx, id)
-	})
+	return c.web.IsFollowingPlaylist(ctx, id)
 }
 
 func (c *fallbackClient) GetUsersTopTracks(ctx context.Context, timeRange string, limit, offset int) (TopTracksResult, error) {

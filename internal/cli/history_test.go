@@ -168,6 +168,10 @@ func TestUserHistoryCmd(t *testing.T) {
 }
 
 func TestUserHistoryHumanOutputUsesReadableTimestampWithoutAffinityRange(t *testing.T) {
+	originalLocal := time.Local
+	time.Local = time.FixedZone("JST", 9*60*60)
+	t.Cleanup(func() { time.Local = originalLocal })
+
 	ctx, out, _ := testutil.NewTestContext(t, output.FormatHuman)
 	ctx.SetSpotify(&testutil.SpotifyMock{
 		GetRecentlyPlayedFn: func(context.Context, int, int64, int64) (spotify.RecentlyPlayedResult, error) {
@@ -183,8 +187,7 @@ func TestUserHistoryHumanOutputUsesReadableTimestampWithoutAffinityRange(t *test
 	if !strings.HasPrefix(got, "Recently played: 1\nLong Way Home — Gareth Emery · ") {
 		t.Fatalf("unexpected history output %q", got)
 	}
-	wantTimestamp := time.Date(2026, time.August, 23, 22, 20, 10, 967000000, time.UTC).Local().Format("Jan 2, 2006 at 3:04 PM MST")
-	if strings.Contains(got, "long_term") || strings.Contains(got, "2026-08-23T22:20:10.967Z") || !strings.Contains(got, wantTimestamp) {
+	if strings.Contains(got, "long_term") || strings.Contains(got, "2026-08-23T22:20:10.967Z") || !strings.Contains(got, "Aug 24, 2026 at 7:20 AM JST") {
 		t.Fatalf("history output was not formatted for humans: %q", got)
 	}
 }

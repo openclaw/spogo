@@ -2,13 +2,14 @@
 
 ## Unreleased
 
-### Added
+### Highlights
 
-- Add `playlist follow`, `playlist unfollow`, and `playlist following` commands accepting playlist IDs, URIs, or URLs
+- Follow, unfollow, and check playlist membership from the terminal with `playlist follow|unfollow|following`; verified against a synthetic Spotify server, not a live account, thanks @yashiels
 
-### Fixed
+### Changed
 
-- Use URI-based library endpoints for playlist follow, unfollow, and following status in development mode; retain `--public` for compatibility without changing visibility
+- Refresh Go crypto, system, synchronization, module, analysis, and formatting dependencies while retaining Go 1.26.7 support
+- Make the listening-history output test independent of the host timezone and verify local-date rollover, thanks @yashiels
 
 ## 0.11.0 - 2026-09-08
 

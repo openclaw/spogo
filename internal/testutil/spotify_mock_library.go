@@ -76,11 +76,11 @@ func (m *SpotifyMock) RemoveTracks(ctx context.Context, playlistID string, uris 
 	return m.RemoveTracksFn(ctx, playlistID, uris)
 }
 
-func (m *SpotifyMock) FollowPlaylist(ctx context.Context, id string, public bool) error {
+func (m *SpotifyMock) FollowPlaylist(ctx context.Context, id string) error {
 	if m.FollowPlaylistFn == nil {
 		return ErrNotImplemented
 	}
-	return m.FollowPlaylistFn(ctx, id, public)
+	return m.FollowPlaylistFn(ctx, id)
 }
 
 func (m *SpotifyMock) UnfollowPlaylist(ctx context.Context, id string) error {

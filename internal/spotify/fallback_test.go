@@ -208,7 +208,7 @@ func (a apiStub) RemoveTracks(ctx context.Context, playlistID string, uris []str
 	return nil
 }
 
-func (a apiStub) FollowPlaylist(context.Context, string, bool) error {
+func (a apiStub) FollowPlaylist(context.Context, string) error {
 	a.note("FollowPlaylist")
 	return nil
 }
@@ -499,7 +499,7 @@ func TestFallbackDelegatesToWeb(t *testing.T) {
 	if err := client.RemoveTracks(ctx, "p1", []string{"spotify:track:t1"}); err != nil {
 		t.Fatalf("remove tracks: %v", err)
 	}
-	if err := client.FollowPlaylist(ctx, "p1", false); err != nil {
+	if err := client.FollowPlaylist(ctx, "p1"); err != nil {
 		t.Fatalf("follow playlist: %v", err)
 	}
 	if err := client.UnfollowPlaylist(ctx, "p1"); err != nil {

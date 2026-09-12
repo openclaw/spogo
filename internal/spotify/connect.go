@@ -230,9 +230,9 @@ func (c *ConnectClient) RemoveTracks(ctx context.Context, playlistID string, uri
 	})
 }
 
-func (c *ConnectClient) FollowPlaylist(ctx context.Context, id string, public bool) error {
+func (c *ConnectClient) FollowPlaylist(ctx context.Context, id string) error {
 	return withWebFallback(c, func(web *Client) error {
-		return web.FollowPlaylist(ctx, id, public)
+		return web.FollowPlaylist(ctx, id)
 	})
 }
 

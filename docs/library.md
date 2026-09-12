@@ -53,6 +53,20 @@ Lists every playlist you own or follow. To list **tracks** in a playlist, use `p
 
 Playlist and library collection listings use the internal web-player API. Saving/removing tracks or albums and creating playlists still require the public Web API, so those mutations may be rate-limited.
 
+## playlist follow / unfollow / following
+
+```bash
+spogo playlist follow <id|uri|url>
+spogo playlist following <id|uri|url> --plain
+spogo playlist unfollow <id|uri|url>
+```
+
+These commands save a playlist to your library, check its membership, or remove it from your library. They accept a playlist ID, Spotify URI, or URL and do not change the playlist's visibility or contents.
+
+They use Spotify's public Web API library endpoints with the selected cookie or OAuth authentication, including when the engine is `connect`. A rate-limit cooldown can apply; switching engines does not bypass it. Cookie-free access uses `--engine web --auth oauth` after `auth oauth login`.
+
+`following --plain` prints `true` or `false`; `--json` emits `{"following":true}` or `{"following":false}`. Both membership states exit successfully. Follow/unfollow print `ok` in plain mode and emit `{"id":"...","status":"ok"}` in JSON mode. Errors use a nonzero exit code without a success payload.
+
 ## playlist create
 
 ```bash
@@ -132,6 +146,6 @@ spogo playlist tracks "Road Trip" --plain |
 
 - **`playlist not found`** — confirm spelling, or pass the URI/URL instead of the name.
 - **`not collaborative`** — only owners and explicitly added collaborators can mutate a playlist.
-- **`429 too many requests`** — should not happen with Connect; if you see it on `web`, switch engines or insert a sleep.
+- **`429 too many requests`** — honor the retry-after hint. Playlist membership operations use the Web API in every engine, so switching engines does not bypass their cooldown.
 
 See [Engines](engines.md) and [Output](output.md) for output and engine details.

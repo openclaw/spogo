@@ -136,7 +136,7 @@ spogo [global flags] <command> [args]
 ### playlists
 
 - `spogo playlist create <name> [--public] [--collab]`
-- `spogo playlist follow <id|uri|url> [--public]` (save to library; `--public` is accepted but ignored)
+- `spogo playlist follow <id|uri|url>` (save to library; does not change visibility)
 - `spogo playlist unfollow <id|uri|url>` (remove from library)
 - `spogo playlist following <id|uri|url>` (check library membership)
 - `spogo playlist add <playlist> <track...>`

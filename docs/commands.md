@@ -173,6 +173,9 @@ Mutate playlists. See [Library](library.md).
 | Command | Purpose |
 | --- | --- |
 | `spogo playlist create <name> [--public] [--collab]` | Create a new playlist. |
+| `spogo playlist follow <id|uri|url>` | Save a playlist to your library without changing visibility. |
+| `spogo playlist unfollow <id|uri|url>` | Remove a playlist from your library. |
+| `spogo playlist following <id|uri|url>` | Check membership (`--plain`: true/false; `--json`: following boolean). |
 | `spogo playlist add <playlist> <track...>` | Append tracks. |
 | `spogo playlist remove <playlist> <track...>` | Remove tracks. |
 | `spogo playlist tracks <playlist> [--limit N]` | List a playlist's items. |

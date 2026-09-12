@@ -34,7 +34,6 @@ type PlaylistTracksCmd struct {
 
 type PlaylistFollowCmd struct {
 	Playlist string `arg:"" required:"" help:"Playlist ID/URL/URI."`
-	Public   bool   `help:"Accepted for compatibility; ignored by Spotify library endpoints."`
 }
 
 type PlaylistUnfollowCmd struct {
@@ -126,10 +125,13 @@ func (cmd *PlaylistFollowCmd) Run(ctx *app.Context) error {
 	if err != nil {
 		return err
 	}
-	if err := client.FollowPlaylist(cmdCtx, playlist.ID, cmd.Public); err != nil {
+	if err := client.FollowPlaylist(cmdCtx, playlist.ID); err != nil {
 		return err
 	}
-	name := playlistDisplayName(cmdCtx, client, playlist.ID)
+	name := playlist.ID
+	if ctx.Output.Format == output.FormatHuman {
+		name = playlistDisplayName(cmdCtx, client, playlist.ID)
+	}
 	return emitOK(ctx, map[string]any{"status": "ok", "id": playlist.ID}, fmt.Sprintf("Followed %s", name))
 }
 
@@ -145,7 +147,10 @@ func (cmd *PlaylistUnfollowCmd) Run(ctx *app.Context) error {
 	if err := client.UnfollowPlaylist(cmdCtx, playlist.ID); err != nil {
 		return err
 	}
-	name := playlistDisplayName(cmdCtx, client, playlist.ID)
+	name := playlist.ID
+	if ctx.Output.Format == output.FormatHuman {
+		name = playlistDisplayName(cmdCtx, client, playlist.ID)
+	}
 	return emitOK(ctx, map[string]any{"status": "ok", "id": playlist.ID}, fmt.Sprintf("Unfollowed %s", name))
 }
 

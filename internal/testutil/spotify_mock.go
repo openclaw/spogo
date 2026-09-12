@@ -41,7 +41,7 @@ type SpotifyMock struct {
 	CreatePlaylistFn      func(context.Context, string, bool, bool) (spotify.Item, error)
 	AddTracksFn           func(context.Context, string, []string) error
 	RemoveTracksFn        func(context.Context, string, []string) error
-	FollowPlaylistFn      func(context.Context, string, bool) error
+	FollowPlaylistFn      func(context.Context, string) error
 	UnfollowPlaylistFn    func(context.Context, string) error
 	IsFollowingPlaylistFn func(context.Context, string) (bool, error)
 	GetUsersTopTracksFn   func(context.Context, string, int, int) (spotify.TopTracksResult, error)

@@ -299,9 +299,9 @@ func (c *AppleScriptClient) RemoveTracks(ctx context.Context, playlistID string,
 	return ErrUnsupported
 }
 
-func (c *AppleScriptClient) FollowPlaylist(ctx context.Context, id string, public bool) error {
+func (c *AppleScriptClient) FollowPlaylist(ctx context.Context, id string) error {
 	if c.fallback != nil {
-		return c.fallback.FollowPlaylist(ctx, id, public)
+		return c.fallback.FollowPlaylist(ctx, id)
 	}
 	return ErrUnsupported
 }

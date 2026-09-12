@@ -110,7 +110,7 @@ Commands:
 - `playlist create|add|remove|tracks|follow|unfollow|following`
 - `device list|set`
 
-Playlist `follow`, `unfollow`, and `following` accept an ID, URI, or URL and use Spotify's library endpoints. The `follow --public` flag is accepted for compatibility but ignored.
+Playlist `follow`, `unfollow`, and `following` accept an ID, URI, or URL and use Spotify's Web API library endpoints with cookies or OAuth. These commands do not change playlist visibility and may return a rate-limit cooldown.
 
 Full spec: `docs/spec.md`.
 

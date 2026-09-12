@@ -3,7 +3,6 @@ package spotify
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -11,27 +10,23 @@ import (
 )
 
 func TestClientFollowPlaylist(t *testing.T) {
-	for _, public := range []bool{true, false} {
-		t.Run(fmt.Sprint(public), func(t *testing.T) {
-			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if r.Method != http.MethodPut || r.URL.Path != "/me/library" || r.URL.Query().Encode() != "uris=spotify%3Aplaylist%3Ap1" {
-					t.Errorf("unexpected request: %s %s", r.Method, r.URL)
-				}
-				body, _ := io.ReadAll(r.Body)
-				if len(body) != 0 {
-					t.Errorf("unexpected body: %s", body)
-				}
-				w.WriteHeader(http.StatusNoContent)
-			}))
-			defer srv.Close()
-			client, err := NewClient(Options{TokenProvider: staticTokenProvider{}, BaseURL: srv.URL})
-			if err != nil {
-				t.Fatal(err)
-			}
-			if err := client.FollowPlaylist(context.Background(), "p1", public); err != nil {
-				t.Fatal(err)
-			}
-		})
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut || r.URL.Path != "/me/library" || r.URL.Query().Encode() != "uris=spotify%3Aplaylist%3Ap1" {
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL)
+		}
+		body, _ := io.ReadAll(r.Body)
+		if len(body) != 0 {
+			t.Errorf("unexpected body: %s", body)
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+	client, err := NewClient(Options{TokenProvider: staticTokenProvider{}, BaseURL: srv.URL})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := client.FollowPlaylist(context.Background(), "p1"); err != nil {
+		t.Fatal(err)
 	}
 }
 

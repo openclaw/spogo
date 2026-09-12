@@ -36,7 +36,7 @@ Connect's internal operations require Spotify browser cookies. When Connect dele
 
 **Tradeoffs**
 
-- Saving/removing library tracks or albums, following/unfollowing artists, creating playlists, and artist-top-track lookups used by artist playback still require the public Web API.
+- Saving/removing library tracks or albums, following/unfollowing artists, checking or changing playlist membership, creating playlists, and artist-top-track lookups used by artist playback still require the public Web API.
 - Transfers without a Connect origin device, some hardware volume/playback requests, and failed internal catalog/library lookups may also fall back to the public Web API.
 - These public-API paths can be rate-limited even with `--engine connect`; a `429` includes Spotify's `retry-after hint` whenever one is supplied.
 
