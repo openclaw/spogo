@@ -22,7 +22,7 @@ Apply to every command.
 | `--timeout <dur>` | `10s` | HTTP timeout for any single request. |
 | `--market <cc>` | account market or `US` | Two-letter market code. |
 | `--language <tag>` | `en` | Language/locale. |
-| `--device <name|id>` | active | Target a specific Connect device. |
+| `--device <name\|id>` | active | Target a specific Connect device. |
 | `--engine <name>` | `connect` | `auto` / `connect` / `web` / `applescript`. |
 | `--auth <name>` | `cookies` | Web API auth: `cookies` / `oauth`. |
 | `--spotify-client-id <id>` | profile | Public Spotify application client ID. |
@@ -103,12 +103,12 @@ Fetch a single item by ID, URI, or URL.
 
 | Command | Returns |
 | --- | --- |
-| `spogo track info <id|url>` | One track. |
-| `spogo album info <id|url>` | Album metadata. |
-| `spogo artist info <id|url>` | Artist metadata. |
-| `spogo playlist info <id|url>` | One playlist's metadata. |
-| `spogo show info <id|url>` | Show metadata. |
-| `spogo episode info <id|url>` | One episode. |
+| `spogo track info <id\|url>` | One track. |
+| `spogo album info <id\|url>` | Album metadata. |
+| `spogo artist info <id\|url>` | Artist metadata. |
+| `spogo playlist info <id\|url>` | One playlist's metadata. |
+| `spogo show info <id\|url>` | Show metadata. |
+| `spogo episode info <id\|url>` | One episode. |
 
 ## playback
 
@@ -116,14 +116,14 @@ Drive what's playing. See [Playback](playback.md).
 
 | Command | Purpose |
 | --- | --- |
-| `spogo play [<id|url>] [--type <kind>] [--shuffle]` | Resume, or start a track / album / playlist / show / artist. |
+| `spogo play [<id\|url>] [--type <kind>] [--shuffle]` | Resume, or start a track / album / playlist / show / artist. |
 | `spogo pause` | Pause current playback. |
 | `spogo next` | Skip to the next item. |
 | `spogo prev` | Previous (restart current if past ~3s). |
-| `spogo seek <ms|mm:ss>` | Seek within the current item. |
+| `spogo seek <ms\|mm:ss>` | Seek within the current item. |
 | `spogo volume <0-100>` | Set device volume. |
-| `spogo shuffle <on|off>` | Toggle shuffle. |
-| `spogo repeat <off|track|context>` | Set repeat mode. |
+| `spogo shuffle <on\|off>` | Toggle shuffle. |
+| `spogo repeat <off\|track\|context>` | Set repeat mode. |
 | `spogo status` | Print currently playing item, album, and device. |
 
 ## queue
@@ -132,7 +132,7 @@ Up-next list. See [Queue](queue.md).
 
 | Command | Purpose |
 | --- | --- |
-| `spogo queue add <id|url>` | Append one item to the queue. |
+| `spogo queue add <id\|url>` | Append one item to the queue. |
 | `spogo queue show` | Print currently playing + queued items. |
 | `spogo queue clear` | Not supported by Spotify's API; use `spogo play <something>` to replace the context. |
 
@@ -143,14 +143,14 @@ Saved tracks, albums, followed artists, owned/followed playlists. See [Library](
 | Command | Purpose |
 | --- | --- |
 | `spogo library tracks list [--limit N]` | List saved tracks. |
-| `spogo library tracks add <id|url...>` | Save tracks. |
-| `spogo library tracks remove <id|url...>` | Unsave tracks. |
+| `spogo library tracks add <id\|url...>` | Save tracks. |
+| `spogo library tracks remove <id\|url...>` | Unsave tracks. |
 | `spogo library albums list [--limit N]` | List saved albums. |
-| `spogo library albums add <id|url...>` | Save albums. |
-| `spogo library albums remove <id|url...>` | Unsave albums. |
+| `spogo library albums add <id\|url...>` | Save albums. |
+| `spogo library albums remove <id\|url...>` | Unsave albums. |
 | `spogo library artists list [--limit N] [--after <artist-id>]` | List followed artists. |
-| `spogo library artists follow <id|url...>` | Follow artists. |
-| `spogo library artists unfollow <id|url...>` | Unfollow artists. |
+| `spogo library artists follow <id\|url...>` | Follow artists. |
+| `spogo library artists unfollow <id\|url...>` | Unfollow artists. |
 | `spogo library playlists list [--limit N]` | List owned/followed playlists. |
 
 ## user
@@ -159,8 +159,8 @@ Read-only listening data from Spotify's web endpoints.
 
 | Command | Purpose |
 | --- | --- |
-| `spogo user top-tracks [--period long_term|medium_term|short_term] [--limit N] [--offset N]` | Show Spotify top tracks by affinity ranking. |
-| `spogo user history [--period long_term|medium_term|short_term] [--limit N] [--after <ms>] [--before <ms>]` | Show recently played tracks available from Spotify. |
+| `spogo user top-tracks [--period long_term\|medium_term\|short_term] [--limit N] [--offset N]` | Show Spotify top tracks by affinity ranking. |
+| `spogo user history [--period long_term\|medium_term\|short_term] [--limit N] [--after <ms>] [--before <ms>]` | Show recently played tracks available from Spotify. |
 
 - Top tracks are Spotify affinity rankings, not play counts.
 - `long_term` = years of listening data; `medium_term` = about 6 months; `short_term` = about 4 weeks.
@@ -173,9 +173,9 @@ Mutate playlists. See [Library](library.md).
 | Command | Purpose |
 | --- | --- |
 | `spogo playlist create <name> [--public] [--collab]` | Create a new playlist. |
-| `spogo playlist follow <id|uri|url>` | Save a playlist to your library without changing visibility. |
-| `spogo playlist unfollow <id|uri|url>` | Remove a playlist from your library. |
-| `spogo playlist following <id|uri|url>` | Check membership (`--plain`: true/false; `--json`: following boolean). |
+| `spogo playlist follow <id\|uri\|url>` | Save a playlist to your library without changing visibility. |
+| `spogo playlist unfollow <id\|uri\|url>` | Remove a playlist from your library. |
+| `spogo playlist following <id\|uri\|url>` | Check membership (`--plain`: true/false; `--json`: following boolean). |
 | `spogo playlist add <playlist> <track...>` | Append tracks. |
 | `spogo playlist remove <playlist> <track...>` | Remove tracks. |
 | `spogo playlist tracks <playlist> [--limit N]` | List a playlist's items. |
@@ -189,7 +189,7 @@ Connect devices. See [Devices](devices.md).
 | Command | Purpose |
 | --- | --- |
 | `spogo device list` | List Connect-visible devices. |
-| `spogo device set <name|id>` | Transfer playback to a device. |
+| `spogo device set <name\|id>` | Transfer playback to a device. |
 
 ## Exit codes
 
