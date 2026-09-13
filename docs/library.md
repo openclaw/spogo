@@ -102,7 +102,7 @@ Playlist mutations route through Connect by default — Connect avoids the Web A
 spogo playlist tracks <playlist> [--limit N]
 ```
 
-Lists the items inside a playlist:
+Lists the items inside a playlist in order, including repeated tracks. Library listings still deduplicate entities; playlist positions are preserved:
 
 ```bash
 spogo playlist tracks spotify:playlist:37i9dQZF1DXcBWIGoYBM5M --plain | head

@@ -11,7 +11,8 @@ func extractLibraryV3Items(payload map[string]any, kind string) ([]Item, int) {
 	if !ok {
 		return nil, 0
 	}
-	return extractWrappedCollectionItems(lib, "items", "item", "data", "totalCount", kind)
+	items := dedupeCollectionItems(extractWrappedCollectionItems(lib, "item", kind))
+	return items, collectionTotal(lib, items)
 }
 
 // extractFetchLibraryTracks navigates the fetchLibraryTracks response path
@@ -32,7 +33,6 @@ func extractFetchLibraryTracks(payload map[string]any) ([]Item, int, error) {
 		return nil, 0, fmt.Errorf("fetchLibraryTracks payload has invalid data.me.library.tracks.items")
 	}
 	items := make([]Item, 0, len(rawItems))
-	seen := map[string]struct{}{}
 	for _, raw := range rawItems {
 		m, ok := raw.(map[string]any)
 		if !ok {
@@ -54,17 +54,10 @@ func extractFetchLibraryTracks(payload map[string]any) ([]Item, int, error) {
 		if !ok {
 			continue
 		}
-		if _, dup := seen[item.URI]; dup {
-			continue
-		}
-		seen[item.URI] = struct{}{}
 		items = append(items, item)
 	}
-	total := getInt(tracks, "totalCount")
-	if total == 0 {
-		total = len(items)
-	}
-	return items, total, nil
+	items = dedupeCollectionItems(items)
+	return items, collectionTotal(tracks, items), nil
 }
 
 func extractPlaylistContentItems(payload map[string]any, kind string) ([]Item, int) {
@@ -72,44 +65,42 @@ func extractPlaylistContentItems(payload map[string]any, kind string) ([]Item, i
 	if !ok {
 		return nil, 0
 	}
-	return extractWrappedCollectionItems(content, "items", "itemV2", "data", "totalCount", kind)
+	// A playlist is an ordered sequence; repeated URIs are distinct positions.
+	items := extractWrappedCollectionItems(content, "itemV2", kind)
+	return items, collectionTotal(content, items)
 }
 
-func extractWrappedCollectionItems(container map[string]any, itemsKey, wrapperKey, dataKey, totalKey, kind string) ([]Item, int) {
-	rawItems, _ := container[itemsKey].([]any)
+func extractWrappedCollectionItems(container map[string]any, wrapperKey, kind string) []Item {
+	rawItems, _ := container["items"].([]any)
 	items := make([]Item, 0, len(rawItems))
-	seen := map[string]struct{}{}
 	for _, raw := range rawItems {
-		dataM, ok := extractWrappedData(raw, wrapperKey, dataKey)
+		data, ok := getMap(raw, wrapperKey, "data")
 		if !ok {
 			continue
 		}
-		item, ok := extractItem(dataM, kind)
-		if !ok {
-			continue
+		if item, ok := extractItem(data, kind); ok {
+			items = append(items, item)
 		}
-		if _, dup := seen[item.URI]; dup {
+	}
+	return items
+}
+
+func dedupeCollectionItems(items []Item) []Item {
+	seen := make(map[string]struct{}, len(items))
+	unique := items[:0]
+	for _, item := range items {
+		if _, exists := seen[item.URI]; exists {
 			continue
 		}
 		seen[item.URI] = struct{}{}
-		items = append(items, item)
+		unique = append(unique, item)
 	}
-	total := getInt(container, totalKey)
-	if total == 0 {
-		total = len(items)
-	}
-	return items, total
+	return unique
 }
 
-func extractWrappedData(raw any, wrapperKey, dataKey string) (map[string]any, bool) {
-	m, ok := raw.(map[string]any)
-	if !ok {
-		return nil, false
+func collectionTotal(container map[string]any, items []Item) int {
+	if total := getInt(container, "totalCount"); total != 0 {
+		return total
 	}
-	wrapper, ok := m[wrapperKey].(map[string]any)
-	if !ok {
-		return nil, false
-	}
-	dataM, ok := wrapper[dataKey].(map[string]any)
-	return dataM, ok
+	return len(items)
 }

@@ -4,6 +4,7 @@
 
 - Honor long Spotify cooldowns without premature retries, retain valid tokens on throttling, and keep cookie-token requests from changing shared HTTP clients
 - Preserve literal CLI arguments and pass playback URIs to AppleScript as data; accept locale-prefixed and embedded Spotify URLs
+- Preserve repeated tracks and their positions when listing Connect playlists while keeping library listings deduplicated
 - Compatibility: reject malformed Spotify URIs, missing identifiers, and unrelated URLs instead of silently truncating or misidentifying them
 - Let Windows config updates finish after concurrent readers close, including when replacement reports access denied
 - Refresh the SQLite runtime dependency and preferred Go toolchain to 1.27.1 while retaining Go 1.26.7 support; validate macOS, Windows, the Go floor, race coverage, and docs in CI
