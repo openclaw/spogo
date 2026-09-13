@@ -120,9 +120,8 @@ func TestCookieTokenProviderHonorsConfiguredTimeout(t *testing.T) {
 		return 1, []byte{1, 2, 3, 4}, nil
 	})
 	t.Cleanup(restore)
-	started := time.Now()
-	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
-		time.Sleep(2 * time.Second)
+	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		<-r.Context().Done()
 	}))
 	t.Cleanup(srv.Close)
 	provider := CookieTokenProvider{
@@ -131,12 +130,8 @@ func TestCookieTokenProviderHonorsConfiguredTimeout(t *testing.T) {
 		Timeout: 200 * time.Millisecond,
 	}
 	_, err := provider.Token(context.Background())
-	elapsed := time.Since(started)
-	if err == nil {
-		t.Fatal("expected configured timeout to fail a stalled token endpoint")
-	}
-	if elapsed >= time.Second {
-		t.Fatalf("elapsed %s, wanted the 200ms configured timeout", elapsed)
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("expected configured timeout to cancel the stalled endpoint, got %v", err)
 	}
 }
 

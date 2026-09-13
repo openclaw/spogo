@@ -24,25 +24,25 @@ func (c *fallbackClient) shouldFallback(err error) bool {
 	return errors.As(err, &apiErr) && apiErr.Status == http.StatusTooManyRequests
 }
 
-func fallbackCall[T any](c *fallbackClient, allow bool, fn func(API) (T, error)) (T, error) {
+func fallbackCall[T any](c *fallbackClient, fn func(API) (T, error)) (T, error) {
 	res, err := fn(c.web)
-	if err == nil || !allow || c.connect == nil || !c.shouldFallback(err) {
+	if err == nil || c.connect == nil || !c.shouldFallback(err) {
 		return res, err
 	}
 	fallback, fallbackErr := fn(c.connect)
 	return fallback, preserveRateLimitHint(err, fallbackErr)
 }
 
-func fallbackVoid(c *fallbackClient, allow bool, fn func(API) error) error {
+func fallbackVoid(c *fallbackClient, fn func(API) error) error {
 	err := fn(c.web)
-	if err == nil || !allow || c.connect == nil || !c.shouldFallback(err) {
+	if err == nil || c.connect == nil || !c.shouldFallback(err) {
 		return err
 	}
 	return preserveRateLimitHint(err, fn(c.connect))
 }
 
 func (c *fallbackClient) Search(ctx context.Context, kind, query string, limit, offset int) (SearchResult, error) {
-	return fallbackCall(c, true, func(api API) (SearchResult, error) {
+	return fallbackCall(c, func(api API) (SearchResult, error) {
 		return api.Search(ctx, kind, query, limit, offset)
 	})
 }
@@ -64,115 +64,115 @@ func (c *fallbackClient) ArtistTopTracks(ctx context.Context, id string, limit i
 }
 
 func (c *fallbackClient) GetTrack(ctx context.Context, id string) (Item, error) {
-	return fallbackCall(c, true, func(api API) (Item, error) {
+	return fallbackCall(c, func(api API) (Item, error) {
 		return api.GetTrack(ctx, id)
 	})
 }
 
 func (c *fallbackClient) GetAlbum(ctx context.Context, id string) (Item, error) {
-	return fallbackCall(c, true, func(api API) (Item, error) {
+	return fallbackCall(c, func(api API) (Item, error) {
 		return api.GetAlbum(ctx, id)
 	})
 }
 
 func (c *fallbackClient) GetArtist(ctx context.Context, id string) (Item, error) {
-	return fallbackCall(c, true, func(api API) (Item, error) {
+	return fallbackCall(c, func(api API) (Item, error) {
 		return api.GetArtist(ctx, id)
 	})
 }
 
 func (c *fallbackClient) GetPlaylist(ctx context.Context, id string) (Item, error) {
-	return fallbackCall(c, true, func(api API) (Item, error) {
+	return fallbackCall(c, func(api API) (Item, error) {
 		return api.GetPlaylist(ctx, id)
 	})
 }
 
 func (c *fallbackClient) GetShow(ctx context.Context, id string) (Item, error) {
-	return fallbackCall(c, true, func(api API) (Item, error) {
+	return fallbackCall(c, func(api API) (Item, error) {
 		return api.GetShow(ctx, id)
 	})
 }
 
 func (c *fallbackClient) GetEpisode(ctx context.Context, id string) (Item, error) {
-	return fallbackCall(c, true, func(api API) (Item, error) {
+	return fallbackCall(c, func(api API) (Item, error) {
 		return api.GetEpisode(ctx, id)
 	})
 }
 
 func (c *fallbackClient) Playback(ctx context.Context) (PlaybackStatus, error) {
-	return fallbackCall(c, true, func(api API) (PlaybackStatus, error) {
+	return fallbackCall(c, func(api API) (PlaybackStatus, error) {
 		return api.Playback(ctx)
 	})
 }
 
 func (c *fallbackClient) Play(ctx context.Context, uri string) error {
-	return fallbackVoid(c, true, func(api API) error {
+	return fallbackVoid(c, func(api API) error {
 		return api.Play(ctx, uri)
 	})
 }
 
 func (c *fallbackClient) Pause(ctx context.Context) error {
-	return fallbackVoid(c, true, func(api API) error {
+	return fallbackVoid(c, func(api API) error {
 		return api.Pause(ctx)
 	})
 }
 
 func (c *fallbackClient) Next(ctx context.Context) error {
-	return fallbackVoid(c, true, func(api API) error {
+	return fallbackVoid(c, func(api API) error {
 		return api.Next(ctx)
 	})
 }
 
 func (c *fallbackClient) Previous(ctx context.Context) error {
-	return fallbackVoid(c, true, func(api API) error {
+	return fallbackVoid(c, func(api API) error {
 		return api.Previous(ctx)
 	})
 }
 
 func (c *fallbackClient) Seek(ctx context.Context, positionMS int) error {
-	return fallbackVoid(c, true, func(api API) error {
+	return fallbackVoid(c, func(api API) error {
 		return api.Seek(ctx, positionMS)
 	})
 }
 
 func (c *fallbackClient) Volume(ctx context.Context, volume int) error {
-	return fallbackVoid(c, true, func(api API) error {
+	return fallbackVoid(c, func(api API) error {
 		return api.Volume(ctx, volume)
 	})
 }
 
 func (c *fallbackClient) Shuffle(ctx context.Context, enabled bool) error {
-	return fallbackVoid(c, true, func(api API) error {
+	return fallbackVoid(c, func(api API) error {
 		return api.Shuffle(ctx, enabled)
 	})
 }
 
 func (c *fallbackClient) Repeat(ctx context.Context, mode string) error {
-	return fallbackVoid(c, true, func(api API) error {
+	return fallbackVoid(c, func(api API) error {
 		return api.Repeat(ctx, mode)
 	})
 }
 
 func (c *fallbackClient) Devices(ctx context.Context) ([]Device, error) {
-	return fallbackCall(c, true, func(api API) ([]Device, error) {
+	return fallbackCall(c, func(api API) ([]Device, error) {
 		return api.Devices(ctx)
 	})
 }
 
 func (c *fallbackClient) Transfer(ctx context.Context, deviceID string) error {
-	return fallbackVoid(c, true, func(api API) error {
+	return fallbackVoid(c, func(api API) error {
 		return api.Transfer(ctx, deviceID)
 	})
 }
 
 func (c *fallbackClient) QueueAdd(ctx context.Context, uri string) error {
-	return fallbackVoid(c, true, func(api API) error {
+	return fallbackVoid(c, func(api API) error {
 		return api.QueueAdd(ctx, uri)
 	})
 }
 
 func (c *fallbackClient) Queue(ctx context.Context) (Queue, error) {
-	return fallbackCall(c, true, func(api API) (Queue, error) {
+	return fallbackCall(c, func(api API) (Queue, error) {
 		return api.Queue(ctx)
 	})
 }
@@ -210,13 +210,13 @@ func (c *fallbackClient) CreatePlaylist(ctx context.Context, name string, public
 }
 
 func (c *fallbackClient) AddTracks(ctx context.Context, playlistID string, uris []string) error {
-	return fallbackVoid(c, true, func(api API) error {
+	return fallbackVoid(c, func(api API) error {
 		return api.AddTracks(ctx, playlistID, uris)
 	})
 }
 
 func (c *fallbackClient) RemoveTracks(ctx context.Context, playlistID string, uris []string) error {
-	return fallbackVoid(c, true, func(api API) error {
+	return fallbackVoid(c, func(api API) error {
 		return api.RemoveTracks(ctx, playlistID, uris)
 	})
 }
@@ -234,13 +234,13 @@ func (c *fallbackClient) IsFollowingPlaylist(ctx context.Context, id string) (bo
 }
 
 func (c *fallbackClient) GetUsersTopTracks(ctx context.Context, timeRange string, limit, offset int) (TopTracksResult, error) {
-	return fallbackCall(c, true, func(api API) (TopTracksResult, error) {
+	return fallbackCall(c, func(api API) (TopTracksResult, error) {
 		return api.GetUsersTopTracks(ctx, timeRange, limit, offset)
 	})
 }
 
 func (c *fallbackClient) GetRecentlyPlayed(ctx context.Context, limit int, after, before int64) (RecentlyPlayedResult, error) {
-	return fallbackCall(c, true, func(api API) (RecentlyPlayedResult, error) {
+	return fallbackCall(c, func(api API) (RecentlyPlayedResult, error) {
 		return api.GetRecentlyPlayed(ctx, limit, after, before)
 	})
 }

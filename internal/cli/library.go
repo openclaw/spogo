@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/steipete/spogo/internal/app"
@@ -96,33 +97,11 @@ func (cmd *LibraryTracksListCmd) Run(ctx *app.Context) error {
 }
 
 func (cmd *LibraryTracksAddCmd) Run(ctx *app.Context) error {
-	ids, err := parseIDs(cmd.IDs, "track")
-	if err != nil {
-		return err
-	}
-	client, cmdCtx, err := spotifyClient(ctx)
-	if err != nil {
-		return err
-	}
-	if err := client.LibraryModify(cmdCtx, "/me/tracks", ids, "PUT"); err != nil {
-		return err
-	}
-	return emitCountStatus(ctx, len(ids), "Updated")
+	return runLibraryModify(ctx, cmd.IDs, "track", http.MethodPut)
 }
 
 func (cmd *LibraryTracksRemoveCmd) Run(ctx *app.Context) error {
-	ids, err := parseIDs(cmd.IDs, "track")
-	if err != nil {
-		return err
-	}
-	client, cmdCtx, err := spotifyClient(ctx)
-	if err != nil {
-		return err
-	}
-	if err := client.LibraryModify(cmdCtx, "/me/tracks", ids, "DELETE"); err != nil {
-		return err
-	}
-	return emitCountStatus(ctx, len(ids), "Updated")
+	return runLibraryModify(ctx, cmd.IDs, "track", http.MethodDelete)
 }
 
 func (cmd *LibraryAlbumsListCmd) Run(ctx *app.Context) error {
@@ -139,33 +118,11 @@ func (cmd *LibraryAlbumsListCmd) Run(ctx *app.Context) error {
 }
 
 func (cmd *LibraryAlbumsAddCmd) Run(ctx *app.Context) error {
-	ids, err := parseIDs(cmd.IDs, "album")
-	if err != nil {
-		return err
-	}
-	client, cmdCtx, err := spotifyClient(ctx)
-	if err != nil {
-		return err
-	}
-	if err := client.LibraryModify(cmdCtx, "/me/albums", ids, "PUT"); err != nil {
-		return err
-	}
-	return emitCountStatus(ctx, len(ids), "Updated")
+	return runLibraryModify(ctx, cmd.IDs, "album", http.MethodPut)
 }
 
 func (cmd *LibraryAlbumsRemoveCmd) Run(ctx *app.Context) error {
-	ids, err := parseIDs(cmd.IDs, "album")
-	if err != nil {
-		return err
-	}
-	client, cmdCtx, err := spotifyClient(ctx)
-	if err != nil {
-		return err
-	}
-	if err := client.LibraryModify(cmdCtx, "/me/albums", ids, "DELETE"); err != nil {
-		return err
-	}
-	return emitCountStatus(ctx, len(ids), "Updated")
+	return runLibraryModify(ctx, cmd.IDs, "album", http.MethodDelete)
 }
 
 func (cmd *LibraryArtistsListCmd) Run(ctx *app.Context) error {
@@ -187,33 +144,11 @@ func (cmd *LibraryArtistsListCmd) Run(ctx *app.Context) error {
 }
 
 func (cmd *LibraryArtistsFollowCmd) Run(ctx *app.Context) error {
-	ids, err := parseIDs(cmd.IDs, "artist")
-	if err != nil {
-		return err
-	}
-	client, cmdCtx, err := spotifyClient(ctx)
-	if err != nil {
-		return err
-	}
-	if err := client.FollowArtists(cmdCtx, ids, "PUT"); err != nil {
-		return err
-	}
-	return emitCountStatus(ctx, len(ids), "Updated")
+	return runLibraryModify(ctx, cmd.IDs, "artist", http.MethodPut)
 }
 
 func (cmd *LibraryArtistsUnfollowCmd) Run(ctx *app.Context) error {
-	ids, err := parseIDs(cmd.IDs, "artist")
-	if err != nil {
-		return err
-	}
-	client, cmdCtx, err := spotifyClient(ctx)
-	if err != nil {
-		return err
-	}
-	if err := client.FollowArtists(cmdCtx, ids, "DELETE"); err != nil {
-		return err
-	}
-	return emitCountStatus(ctx, len(ids), "Updated")
+	return runLibraryModify(ctx, cmd.IDs, "artist", http.MethodDelete)
 }
 
 func (cmd *LibraryPlaylistsListCmd) Run(ctx *app.Context) error {
@@ -227,6 +162,26 @@ func (cmd *LibraryPlaylistsListCmd) Run(ctx *app.Context) error {
 		return err
 	}
 	return emitItems(ctx, items, total, nil)
+}
+
+func runLibraryModify(ctx *app.Context, inputs []string, kind, method string) error {
+	ids, err := parseIDs(inputs, kind)
+	if err != nil {
+		return err
+	}
+	client, cmdCtx, err := spotifyClient(ctx)
+	if err != nil {
+		return err
+	}
+	if kind == "artist" {
+		err = client.FollowArtists(cmdCtx, ids, method)
+	} else {
+		err = client.LibraryModify(cmdCtx, "/me/"+kind+"s", ids, method)
+	}
+	if err != nil {
+		return err
+	}
+	return emitCountStatus(ctx, len(ids), "Updated")
 }
 
 func parseIDs(inputs []string, kind string) ([]string, error) {

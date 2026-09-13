@@ -11,37 +11,13 @@ func extractArtistNames(value any) []string {
 	if list, ok := m["artists"].([]any); ok {
 		appendArtistNames(&artists, list)
 	}
-	if group, ok := m["artists"].(map[string]any); ok {
-		if list, ok := group["items"].([]any); ok {
-			appendArtistNames(&artists, list)
-		}
-		if list, ok := group["nodes"].([]any); ok {
-			appendArtistNames(&artists, list)
-		}
-		if list, ok := group["edges"].([]any); ok {
-			appendArtistNames(&artists, list)
-		}
-	}
-	if group, ok := m["firstArtist"].(map[string]any); ok {
-		if list, ok := group["items"].([]any); ok {
-			appendArtistNames(&artists, list)
-		}
-		if list, ok := group["nodes"].([]any); ok {
-			appendArtistNames(&artists, list)
-		}
-		if list, ok := group["edges"].([]any); ok {
-			appendArtistNames(&artists, list)
-		}
-	}
-	if group, ok := m["otherArtists"].(map[string]any); ok {
-		if list, ok := group["items"].([]any); ok {
-			appendArtistNames(&artists, list)
-		}
-		if list, ok := group["nodes"].([]any); ok {
-			appendArtistNames(&artists, list)
-		}
-		if list, ok := group["edges"].([]any); ok {
-			appendArtistNames(&artists, list)
+	for _, key := range []string{"artists", "firstArtist", "otherArtists"} {
+		if group, ok := m[key].(map[string]any); ok {
+			for _, container := range []string{"items", "nodes", "edges"} {
+				if list, ok := group[container].([]any); ok {
+					appendArtistNames(&artists, list)
+				}
+			}
 		}
 	}
 	if len(artists) == 0 {
