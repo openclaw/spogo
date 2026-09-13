@@ -72,7 +72,9 @@ func (p CookieTokenProvider) Token(ctx context.Context) (Token, error) {
 	if client == nil {
 		client = newCookieTokenHTTPClient(jar, p.Timeout)
 	} else {
-		client.Jar = jar
+		requestClient := *client
+		requestClient.Jar = jar
+		client = &requestClient
 	}
 	code, version, err := generateTOTP(ctx, time.Now())
 	if err != nil {

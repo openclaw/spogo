@@ -121,6 +121,8 @@ Older spogo versions had Connect responses missing artist/album for some track s
 
 ## Rate limits
 
+The Web API client retries short cooldowns (up to three seconds) at most twice. Longer `Retry-After` values, including HTTP dates, return immediately with the cooldown hint so the caller can schedule the next attempt. A rate limit does not invalidate the cached access token.
+
 ### `429 too many requests`
 
 Spotify's public Web API can rate-limit cookie-derived tokens aggressively, even when a command starts on the `connect` engine. If you see it:

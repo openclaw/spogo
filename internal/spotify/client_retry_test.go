@@ -57,8 +57,8 @@ func TestClientRetriesOnRateLimit(t *testing.T) {
 	if requests != 2 {
 		t.Fatalf("expected 2 requests, got %d", requests)
 	}
-	if provider.calls < 2 {
-		t.Fatalf("expected token refresh, got %d calls", provider.calls)
+	if provider.calls != 1 {
+		t.Fatalf("rate limits must retain the valid token, got %d provider calls", provider.calls)
 	}
 }
 
@@ -122,5 +122,34 @@ func TestClientRetriesRateLimitedMutationAndSurfacesRetryAfter(t *testing.T) {
 	}
 	if !strings.Contains(apiErr.Error(), "retry-after hint 42s") {
 		t.Fatalf("expected retry-after hint in error string, got %q", apiErr.Error())
+	}
+}
+
+func TestClientReturnsLongCooldownWithoutRetrying(t *testing.T) {
+	for _, header := range []string{"120", time.Now().Add(2 * time.Minute).UTC().Format(http.TimeFormat)} {
+		t.Run(header, func(t *testing.T) {
+			provider := &countingTokenProvider{}
+			requests := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				requests++
+				w.Header().Set("Retry-After", header)
+				w.WriteHeader(http.StatusTooManyRequests)
+			}))
+			defer server.Close()
+			client, err := NewClient(Options{TokenProvider: provider, BaseURL: server.URL, HTTPClient: server.Client()})
+			if err != nil {
+				t.Fatal(err)
+			}
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+			_, err = client.Devices(ctx)
+			var apiErr APIError
+			if !errors.As(err, &apiErr) || apiErr.Status != 429 || apiErr.RetryAfter < time.Minute {
+				t.Fatalf("expected original cooldown, got %v", err)
+			}
+			if requests != 1 || provider.calls != 1 {
+				t.Fatalf("requests=%d, token calls=%d, want 1 each", requests, provider.calls)
+			}
+		})
 	}
 }

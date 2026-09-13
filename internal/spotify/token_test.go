@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/http/cookiejar"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -174,5 +175,27 @@ func TestClientTokenError(t *testing.T) {
 	}
 	if _, err := client.token(context.Background()); err == nil {
 		t.Fatalf("expected error")
+	}
+}
+
+func TestCookieTokenProviderPreservesBorrowedClientJar(t *testing.T) {
+	restore := SetTotpSecretFetcher(func(context.Context) (int, []byte, error) { return 1, []byte{1, 2, 3}, nil })
+	t.Cleanup(restore)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"accessToken":"synthetic-token","expiresIn":3600}`))
+	}))
+	defer server.Close()
+	client := server.Client()
+	originalJar, err := cookiejar.New(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	client.Jar = originalJar
+	provider := CookieTokenProvider{Source: stubCookieSource{}, BaseURL: server.URL, Client: client}
+	if _, err := provider.Token(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if client.Jar != originalJar {
+		t.Fatal("token request replaced the caller's cookie jar")
 	}
 }

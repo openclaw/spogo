@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strconv"
 	"time"
 )
 
@@ -94,26 +93,21 @@ func (c *Client) send(ctx context.Context, method, path string, params url.Value
 			return err
 		}
 		if resp.StatusCode == http.StatusTooManyRequests && attempt < maxAttempts-1 {
-			retryAfter := time.Second
-			if header := resp.Header.Get("Retry-After"); header != "" {
-				if seconds, err := strconv.Atoi(header); err == nil && seconds > 0 {
-					retryAfter = time.Duration(seconds) * time.Second
+			retryAfter := retryAfterFromResponse(resp)
+			if retryAfter <= 0 {
+				retryAfter = time.Second
+			}
+			if retryAfter <= maxRetryDelay {
+				_ = resp.Body.Close()
+				select {
+				case <-time.After(retryAfter):
+					continue
+				case <-ctx.Done():
+					return ctx.Err()
 				}
 			}
-			if retryAfter > maxRetryDelay {
-				retryAfter = maxRetryDelay
-			}
-			_ = resp.Body.Close()
-			c.mu.Lock()
-			c.lastToken = Token{}
-			c.mu.Unlock()
-			select {
-			case <-time.After(retryAfter):
-				continue
-			case <-ctx.Done():
-				return ctx.Err()
-			}
 		}
+
 		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode == http.StatusNoContent {
 			if dest != nil {
