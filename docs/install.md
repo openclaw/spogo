@@ -31,7 +31,7 @@ Asset names include the version, lowercase OS, and Go architecture, for example 
 
 ## Build from source
 
-With automatic toolchain selection enabled, checkout builds use the preferred Go 1.26.8 toolchain unless a newer local toolchain is installed.
+With automatic toolchain selection enabled, checkout builds use the preferred Go 1.27.1 toolchain unless a newer local toolchain is installed.
 
 ```bash
 git clone https://github.com/openclaw/spogo.git

@@ -18,12 +18,12 @@ jobs:
     runs-on: macos-15
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
       - name: Setup Go
-        uses: actions/setup-go@v7
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
           cache: true
@@ -32,13 +32,15 @@ jobs:
         run: cp .goreleaser.yaml /tmp/.goreleaser.yaml
 
       - name: Checkout release tag
-        run: git checkout ${{ inputs.tag }}
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: git checkout --detach "refs/tags/$RELEASE_TAG"
 
       - name: GoReleaser
-        uses: goreleaser/goreleaser-action@v7
+        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with:
           distribution: goreleaser
-          version: latest
+          version: v2.18.1
           args: release --clean --config /tmp/.goreleaser.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -46,9 +48,9 @@ jobs:
   update-homebrew-tap:
     runs-on: ubuntu-latest
     needs: goreleaser
+    env:
+      RELEASE_TAG: ${{ inputs.tag }}
     steps:
-      - name: Resolve release tag
-        run: echo "RELEASE_TAG=${{ inputs.tag }}" >> "$GITHUB_ENV"
 
       - name: Dispatch tap formula update
         env:

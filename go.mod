@@ -2,7 +2,7 @@ module github.com/steipete/spogo
 
 go 1.26.7
 
-toolchain go1.26.8
+toolchain go1.27.1
 
 require (
 	github.com/alecthomas/kong v1.16.1
@@ -46,7 +46,7 @@ require (
 	golang.org/x/sync v0.23.0 // indirect
 	golang.org/x/tools v0.50.0 // indirect
 	gopkg.in/ini.v1 v1.67.3 // indirect
-	modernc.org/libc v1.75.6 // indirect
+	modernc.org/libc v1.75.7 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.1 // indirect
 	modernc.org/sqlite v1.58.0 // indirect

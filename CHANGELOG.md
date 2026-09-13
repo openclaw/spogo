@@ -3,7 +3,7 @@
 ## Unreleased
 
 - Let Windows config updates finish after concurrent readers close, including when replacement reports access denied
-
+- Refresh the SQLite runtime dependency and preferred Go toolchain to 1.27.1 while retaining Go 1.26.7 support; validate macOS, Windows, the Go floor, race coverage, and docs in CI
 - Correct command, output, cookie-cache, and automation documentation to match the CLI, including working playlist pipelines and release asset names
 
 ## 0.12.0 - 2026-09-11
