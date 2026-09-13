@@ -52,12 +52,12 @@ spogo [global flags] <command> [args]
 - `spogo auth import`
   - flags: `--browser <chrome|brave|edge|firefox|safari>` default: `chrome`
   - `--browser-profile <name>`
-  - `--cookie-path <file>`
+  - `--cookie-path <file>` (destination JSON cache)
   - `--domain <host>` default `spotify.com`
   - when browser reads fail, surface underlying browser-store warnings
 - `spogo auth paste`
   - reads cookie values from stdin (prompts when interactive)
-  - `--cookie-path <file>`
+  - `--cookie-path <file>` (destination JSON cache)
   - `--domain <suffix>` default `spotify.com`
   - `--path <path>` default `/`
 - `spogo auth clear`
@@ -153,8 +153,8 @@ spogo [global flags] <command> [args]
 
 - stdout: primary results; human or machine modes.
 - stderr: warnings/errors/logs.
-- `--plain`: stable, line-oriented, tab-separated fields.
-- `--json`: stable, documented keys per command.
+- `--plain`: stable tab-separated field order; metadata tabs/newlines are not escaped. See [Output](output.md) for exact columns.
+- `--json`: stable keys; see [Output](output.md) for actual result shapes.
 
 ## Engines
 
@@ -166,7 +166,7 @@ spogo [global flags] <command> [args]
 
 - `0` success
 - `1` generic failure
-- `2` invalid usage/validation
+- `2` parser usage/global validation (some command-specific validation returns `1`)
 - `3` auth/cookies missing or invalid
 - `4` network/timeouts
 

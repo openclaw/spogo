@@ -5,13 +5,14 @@ description: "Common spogo failures — auth, devices, rate limits, WSL — and 
 
 # Troubleshooting
 
-The first move when anything misbehaves is to re-run with `-d`:
+Capture the exact command, selected engine, version, and stderr error:
 
 ```bash
-spogo -d <command>
+spogo --version
+spogo status --json > status.json 2> spogo.log
 ```
 
-Debug logs go to stderr and include engine choices, fallbacks, HTTP status codes, and request IDs. They will not pollute a `--json` or `--plain` pipeline.
+`--verbose` and `--debug` currently do not add HTTP or engine traces. Inspect logs before sharing them and remove private account or session information.
 
 ## Auth
 
@@ -27,7 +28,7 @@ If browser-store reads keep failing, fall back to `auth paste` (see [Auth](auth.
 
 ### `401 Unauthorized` / `403 Forbidden` from any read command
 
-Cookies are stale. Re-import:
+With cookie authentication, refresh the browser session and re-import. A 403 may also indicate missing permissions or an account entitlement, so check the error message:
 
 ```bash
 spogo auth import --browser chrome
@@ -159,23 +160,15 @@ spogo <command>
 
 ## Engines
 
-### "Connect engine returned X" — what does that mean?
+### AppleScript command fails
 
-Run with `-d` and look for the `engine=` line in the debug output. spogo logs which engine handled each call and any fallback that fired.
-
-### AppleScript engine: "spotify not running"
-
-Open Spotify.app first. AppleScript can't launch the app reliably; spogo expects it to already be open.
-
-### AppleScript engine: search results differ from web
-
-The Mac app uses local search. Switch to `connect` or `web` for canonical results.
+Confirm Spotify.app is available and that macOS allows the command to control it. Playback controls use AppleScript; search, library, and playlist commands may use the configured remote fallback and need its credentials.
 
 ## Diagnostics to share when filing an issue
 
 ```bash
 spogo --version
-spogo -d <failing command> 2> spogo.log
+spogo <failing command> 2> spogo.log
 ```
 
 Attach `spogo.log` (redact any cookie values it contains) to a [GitHub issue](https://github.com/openclaw/spogo/issues).

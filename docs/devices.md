@@ -15,7 +15,7 @@ spogo device list --plain
 spogo device list --json
 ```
 
-Prints every device Spotify Connect currently knows about, with the active one marked. Plain mode is one device per line: `id`, `name`, `type`, `is_active`, `volume_percent`.
+Prints every device Spotify Connect currently knows about, with the active one marked. Plain mode is one device per line: `id`, `name`, `is_active`. JSON also includes `type` and `volume_percent`.
 
 ## device set
 
@@ -24,19 +24,18 @@ spogo device set "Kitchen"
 spogo device set 0d1841b0976bae2a3a310dd74c0f3df354899bc8
 ```
 
-Transfers playback to the named device (case-insensitive substring match) or device ID. If the current Connect state has no origin device, spogo falls back to the Web API transfer endpoint instead of failing.
+Transfers playback to the named device (case-insensitive exact match) or device ID. If the current Connect state has no origin device, spogo falls back to the Web API transfer endpoint instead of failing.
 
 ## --device flag (per-command)
 
-Every playback / queue / status command accepts `--device <name|id>`:
+`--device` is a global flag. The Web API sends its value as a device ID on mutations; Connect uses it to find a target for `play` when no device is active:
 
 ```bash
 spogo play spotify:track:... --device "Kitchen"
 spogo volume 30 --device "MacBook Pro"
-spogo status --device "Living Room"
 ```
 
-This temporarily targets a specific device for one command without changing the active device.
+To consistently select a device for subsequent controls, use `device set` first. `status` reports the current playback state and does not query an arbitrary device selected by this flag.
 
 ## Default device
 

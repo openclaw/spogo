@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Correct command, output, cookie-cache, and automation documentation to match the CLI, including working playlist pipelines and release asset names
+
 ## 0.12.0 - 2026-09-11
 
 ### Highlights

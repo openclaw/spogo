@@ -5,7 +5,7 @@ description: "Install spogo via Homebrew, go install, or a release binary. macOS
 
 # Install
 
-spogo ships as a single static Go binary. Pick whichever path matches how you usually install CLIs.
+spogo ships as a single Go binary. Pick whichever path matches how you usually install CLIs.
 
 ## Homebrew (macOS, Linux)
 
@@ -13,7 +13,7 @@ spogo ships as a single static Go binary. Pick whichever path matches how you us
 brew install steipete/tap/spogo
 ```
 
-That's it — the formula pulls a signed binary from the latest GitHub release.
+The formula pulls a release binary; macOS artifacts are signed and notarized.
 
 ## go install (any platform)
 
@@ -27,11 +27,7 @@ Builds from source with a minimum of Go 1.26.7.
 
 Grab a tarball or zip for your OS/arch from the [releases page](https://github.com/openclaw/spogo/releases) and drop the `spogo` binary somewhere on `PATH`:
 
-```bash
-curl -L https://github.com/openclaw/spogo/releases/latest/download/spogo_$(uname -s)_$(uname -m).tar.gz | tar xz
-sudo mv spogo /usr/local/bin/
-spogo --version
-```
+Asset names include the version, lowercase OS, and Go architecture, for example `spogo_0.12.0_darwin_arm64.tar.gz` or `spogo_0.12.0_windows_amd64.zip`. Select the exact asset on the release page, extract it, and run `spogo --version`. `uname` output is not an asset filename.
 
 ## Build from source
 

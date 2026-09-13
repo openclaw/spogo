@@ -6,8 +6,6 @@ summary: "Release checklist for spogo (GitHub release binaries via GoReleaser)"
 
 Always do **all** steps below (CI + changelog + tag + GitHub release assets). No partial releases.
 
-Shortcut (if you want scripts later): create them to mirror this doc.
-
 Assumptions:
 - Repo: `openclaw/spogo`
 - Binary: `spogo`
@@ -26,7 +24,7 @@ Assumptions:
 
 Confirm GitHub Actions `CI` is green for the commit you’re tagging:
 ```sh
-gh run list -L 5 --branch main
+gh run list -L 5 --branch main --json databaseId,headSha,status,conclusion,url
 ```
 
 ## 2) Update changelog
@@ -52,7 +50,7 @@ Run the thin caller with the version without a `v` prefix:
 
 ```sh
 gh workflow run release-unified.yml -f version=X.Y.Z
-gh run list -L 5 --workflow release-unified.yml
+gh run list -L 5 --workflow release-unified.yml --json databaseId,status,conclusion,url
 gh run watch <run-id> --exit-status
 ```
 

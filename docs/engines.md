@@ -78,7 +78,7 @@ The AppleScript last resort is limited to `status`, `play`, `pause`, `next`, `pr
 
 ## applescript (macOS only)
 
-Drives the local Spotify desktop app via AppleScript. No network, no cookies, no rate limits — but only the Mac you're on can be controlled, and you only see the local app's view (no Connect device list).
+Playback controls drive the local Spotify desktop app via AppleScript without cookies or remote API requests. Other commands may delegate to a remote engine; selecting AppleScript is not a network-isolation boundary. `device list` shows only the local Mac.
 
 ```bash
 spogo --engine applescript play
@@ -116,9 +116,10 @@ export SPOGO_ENGINE=web
 export SPOGO_AUTH=oauth
 ```
 
-In a config profile (`~/.config/spogo/<profile>/config.toml` or platform equivalent):
+In the shared config file (`~/.config/spogo/config.toml` on Linux, or the platform config directory):
 
 ```toml
+[profile.default]
 engine = "web"
 auth = "oauth"
 ```
@@ -129,4 +130,4 @@ auth = "oauth"
 spogo --debug status
 ```
 
-Debug logging on stderr shows which engine handled each call and any fallbacks that fired. See [Output](output.md) and [Troubleshooting](troubleshooting.md).
+`--debug` is currently accepted without additional tracing. Include the selected engine, command, version, and stderr error when reporting a problem. See [Output](output.md) and [Troubleshooting](troubleshooting.md).

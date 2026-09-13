@@ -5,7 +5,7 @@ description: "Play, pause, seek, volume, shuffle, repeat — drive Spotify playb
 
 # Playback
 
-All playback commands act on the currently active Spotify Connect device unless you pass `--device`. Use [`spogo device list`](devices.md) to see what's available and `spogo device set <name|id>` to switch.
+Connect controls normally act on the currently active device. Use [`spogo device list`](devices.md) to see what's available and `spogo device set <name|id>` to switch.
 
 ## play
 
@@ -88,20 +88,20 @@ spogo status --plain     # tab-separated key value
 spogo status --json      # full payload
 ```
 
-JSON shape includes `is_playing`, `progress_ms`, `device`, `item` (track or episode), `context`, `repeat_state`, `shuffle_state`. Use `jq` to pluck what you need:
+JSON shape includes `is_playing`, `progress_ms`, `device`, `item`, `repeat`, `shuffle`. Use `jq` to pluck what you need:
 
 ```bash
-spogo status --json | jq -r '.item.name + " — " + (.item.artists|map(.name)|join(", "))'
+spogo status --json | jq -r '.item.name + " — " + (.item.artists|join(", "))'
 ```
 
 ## Targeting a specific device
 
-Every playback command accepts `--device <name|id>`:
+Use `device set` to select a device before playback controls. The Web API accepts a device ID via `--device`; Connect uses that selector for `play` when no device is active. See [Devices](devices.md).
 
 ```bash
 spogo play spotify:track:... --device "Kitchen"
-spogo volume 30 --device "MacBook Pro"
-spogo pause --device 0d1841b0976bae2a3a310dd74c0f3df354899bc8
+spogo device set "MacBook Pro"
+spogo volume 30
 ```
 
 When Connect state has no origin device, `spogo` falls back to the Web API transfer endpoint instead of failing.
@@ -111,7 +111,7 @@ When Connect state has no origin device, `spogo` falls back to the Web API trans
 - **`connect`** (default) — playback control via Spotify's internal Connect endpoints. Best fidelity for transitions, queueing, and device transfer; auto-falls-back to Web API for transfers when no origin device exists.
 - **`web`** — the public Web API. Slower, rate-limited, but the only option for accounts with restrictive Connect availability.
 - **`auto`** — Connect first, then Web; on macOS, playback status/control finally fall back to Spotify.app through AppleScript if both remote engines fail.
-- **`applescript`** (macOS only) — drive Spotify.app directly via AppleScript. No network, but only sees the local Mac app.
+- **`applescript`** (macOS only) — playback controls drive the local Spotify.app. Other commands may use a remote fallback.
 
 See [Engines](engines.md) for the full breakdown.
 

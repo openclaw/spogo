@@ -82,9 +82,10 @@ spogo device set "Kitchen"   # switch playback there
 spogo status --json | jq -r '.item.name'
 
 # Save the top-5 search results into a playlist
-spogo search track "lo-fi" --limit 5 --plain |
-  awk '{print $1}' |
-  xargs spogo playlist add "Lo-Fi Coding"
+playlist_id=$(spogo playlist create "Lo-Fi Coding" --json | jq -r .id)
+spogo search track "lo-fi" --limit 5 --json |
+  jq -r '.items[].uri' |
+  while IFS= read -r uri; do spogo playlist add "$playlist_id" "$uri"; done
 ```
 
 ## Where to next

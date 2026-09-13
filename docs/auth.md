@@ -156,13 +156,13 @@ For a non-default browser profile:
 spogo auth import --browser chrome --browser-profile "Profile 1"
 ```
 
-For a specific cookie store file:
+To choose where spogo writes the imported JSON cookie cache:
 
 ```bash
-spogo auth import --cookie-path /path/to/cookies.sqlite
+spogo auth import --cookie-path /path/to/spogo-cookies.json
 ```
 
-When the browser-store read returns nothing, spogo surfaces the underlying warning, such as a locked keychain, missing profile, or decryption failure.
+`--cookie-path` is an output file, not a browser database to read. When the browser-store read returns nothing, spogo surfaces the underlying warning, such as a locked keychain, missing profile, or decryption failure.
 
 ### Manual paste (WSL fallback)
 

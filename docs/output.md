@@ -1,85 +1,65 @@
 ---
 title: Output
-description: "spogo's output contract — human, plain, and JSON modes; stdout vs stderr; color and verbosity controls."
+description: "JSON and tab-separated output, color, stdout/stderr, and exit codes."
 ---
 
 # Output
 
-spogo follows a strict separation: **stdout** carries data, **stderr** carries logs and errors. Pipes always work — `spogo X | tool Y` never gets contaminated with progress bars or color codes when the destination isn't a TTY.
+Use `--json` for structured data and `--plain` for tab-separated rows. These flags are mutually exclusive. Command errors go to stderr and return a nonzero exit code.
 
-## Three output modes
+## Human output and color
 
-### Human (default)
+Human output is the default. Color requires a terminal on stdout and is disabled by `--no-color`, a nonempty `NO_COLOR`, or `TERM=dumb`. Passing `--no-color=false` does not force color into a pipe.
 
-Coloured, formatted, friendly. Tables, headings, dimmed metadata. What you want when you're at a terminal.
+`--quiet` suppresses human result output. It does not suppress JSON/plain results or errors. `--verbose` and `--debug` are accepted for compatibility, but currently do not enable additional HTTP or engine tracing.
 
-```bash
-spogo status
-```
+## Plain output
 
-Color is automatic when stdout is a TTY. It is disabled when:
+Rows have no header. Field order is stable:
 
-- `--no-color` is passed.
-- `NO_COLOR` is set (any value).
-- `TERM=dumb`.
-- stdout is not a TTY (piped, redirected).
-
-### `--plain`
-
-Line-oriented, tab-separated, **stable**. Designed for `awk`, `cut`, `xargs`, and shell pipelines:
-
-```bash
-spogo search track "weezer" --limit 3 --plain
-# spotify:track:7hQJA50XrCWABAu5v6QZ4i  Say It Ain't So     Weezer
-# spotify:track:0sf12qNH5qcw8qpgymFOqD  Buddy Holly         Weezer
-# spotify:track:4PTG3Z6ehGkBFwjybzWkR8  Undone — The Sweater Song   Weezer
-```
-
-Field order per command is documented in the [Spec](spec.md). Tabs are the only delimiter; values containing tabs are escaped.
-
-### `--json`
-
-Structured, **stable** keys. Use `jq` (or any JSON tool) downstream:
-
-```bash
-spogo status --json | jq -r '.item.name + " — " + (.item.artists|map(.name)|join(", "))'
-```
-
-JSON shapes match the [Spec](spec.md). Fields may be added; existing keys are not renamed or removed without a major version bump.
-
-## Verbosity
-
-| Flag | Effect |
+| Result | Columns, in order |
 | --- | --- |
-| (default) | Normal: prints results to stdout, errors to stderr. |
-| `-q`, `--quiet` | Suppress non-essential stderr output. |
-| `-v`, `--verbose` | Extra context on stderr (engine choices, fallbacks, timings). |
-| `-d`, `--debug` | Everything `-v` plus HTTP request/response details. |
+| Track | type (`track`), ID, name, artists, album, URI |
+| Album | type (`album`), ID, name, artists, release date, track count |
+| Artist | type (`artist`), ID, name, followers |
+| Playlist | type (`playlist`), ID, name, owner, track count |
+| Show | type (`show`), ID, name, publisher, episode count |
+| Episode | type (`episode`), ID, name, duration in milliseconds |
+| Playback status | is playing, progress in milliseconds, device name, item name |
+| Device | ID, name, is active |
+| Top track | rank, then the track columns above |
+| History item | played-at timestamp, then the track columns above |
 
-Debug mode is the right escalation when something is misbehaving — see [Troubleshooting](troubleshooting.md).
+`queue show --plain` prints upcoming tracks only. JSON includes the current item separately. Successful mutation commands generally print `ok`; commands with additional results are described in their command guides.
 
-## Stdout vs stderr
-
-- **stdout**: command results only.
-- **stderr**: warnings, errors, debug logs, prompts.
-
-This is invariant — every spogo command in every mode follows it. That means `2>/dev/null` mutes diagnostic noise without losing data, and `>file.json` always captures clean output.
+Artists are joined with a comma and space. Text fields currently pass tabs and newlines through unchanged; use JSON when arbitrary metadata must round-trip safely.
 
 ```bash
-spogo library tracks list --json --limit 100 > tracks.json 2>/dev/null
+# Track URIs are column six, not column one.
+spogo search track "weezer" --limit 3 --plain | cut -f6
 ```
 
-## No prompts in pipelines
+## JSON output
 
-When stdin is not a TTY, spogo never prompts — commands that would normally ask for input return an error instead. Force prompts off explicitly with `--no-input`.
+Search returns an object with `type`, `limit`, `offset`, `total`, and `items`. Library and playlist-track listings use `total` and `items`. Item lookups return a single item. Item `artists` is an array of strings.
+
+Playback status includes `is_playing`, `progress_ms`, `device`, `shuffle`, and `repeat`, plus `item` when available. Queue output uses `currently_playing` when available and `queue` for upcoming items. Device listing returns an array.
+
+```bash
+spogo status --json | jq -r '.item.name + " — " + (.item.artists | join(", "))'
+spogo playlist tracks spotify:playlist:37i9dQZF1DXcBWIGoYBM5M --json | jq '.items[].name'
+```
+
+Fields may be added; existing keys are not renamed or removed without a major version bump. Optional metadata may be absent. Consumers should tolerate `null` for empty collections and missing optional fields.
+
+## Prompts and diagnostics
+
+Cookie paste accepts piped values without prompting. `--no-input` refuses interactive cookie paste when stdin is a terminal. OAuth login still prints an authorization URL and waits for a browser callback; it is not a headless login flow.
 
 ```bash
 spogo auth paste --no-input < cookies.txt
+spogo status --json > status.json 2> spogo.log
 ```
-
-## Color in CI
-
-CI logs usually want color stripped. spogo respects `NO_COLOR` and detects non-TTY stdout, so the default behavior is correct in GitHub Actions, GitLab CI, etc. — no flag needed.
 
 ## Exit codes
 
@@ -87,34 +67,24 @@ CI logs usually want color stripped. spogo respects `NO_COLOR` and detects non-T
 | --- | --- |
 | `0` | Success |
 | `1` | Generic failure |
-| `2` | Invalid usage / validation error |
-| `3` | Auth / cookies missing or invalid |
+| `2` | Parser usage or global-option validation error |
+| `3` | Missing browser cookies, OAuth authentication failure, or Spotify HTTP 401/403 |
 | `4` | Network / timeout |
 
-Use these in scripts:
+Some command-specific validation errors currently return `1`. Cookie status is a local inventory check, not proof that the session is valid on Spotify.
+
+Capture a command's status before applying shell negation:
 
 ```bash
-if ! spogo auth status >/dev/null 2>&1; then
-  case $? in
-    3) echo "Need to re-import cookies" >&2 ;;
-    *) echo "Auth check failed" >&2 ;;
+if spogo status --json > status.json; then
+  jq '.item' status.json
+else
+  code=$?
+  case "$code" in
+    3) echo "Authentication failed" >&2 ;;
+    4) echo "Network request failed" >&2 ;;
+    *) echo "spogo failed (exit $code)" >&2 ;;
   esac
-  exit 1
+  exit "$code"
 fi
-```
-
-## Examples
-
-```bash
-# Pipe-friendly: just the URI
-spogo search track "weezer" --limit 1 --plain | awk '{print $1}'
-
-# Capture full JSON, pluck a field
-spogo status --json | jq -r '.item.id'
-
-# Mute stderr noise but keep stdout
-spogo library tracks list --json 2>/dev/null > tracks.json
-
-# Force color even in a pipe (rare; for fancy renderers)
-spogo --no-color=false status | bat -l ansi
 ```

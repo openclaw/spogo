@@ -49,7 +49,7 @@ Listing followed artists uses Spotify's internal web-player library operation. F
 spogo library playlists list [--limit N]
 ```
 
-Lists every playlist you own or follow. To list **tracks** in a playlist, use `playlist tracks` below.
+Lists one page of playlists you own or follow; use `--offset` to fetch further pages (maximum `--limit` is 50). To list **tracks** in a playlist, use `playlist tracks` below.
 
 Playlist and library collection listings use the internal web-player API. Saving/removing tracks or albums and creating playlists still require the public Web API, so those mutations may be rate-limited.
 
@@ -84,10 +84,10 @@ spogo playlist add <playlist> <track...>
 spogo playlist remove <playlist> <track...>
 ```
 
-`<playlist>` is a playlist ID, `spotify:playlist:...` URI, `https://open.spotify.com/playlist/...` URL, or **the playlist name** if you own it. Tracks accept the same flexible forms as `library tracks add`.
+`<playlist>` is a playlist ID, `spotify:playlist:...` URI, or `https://open.spotify.com/playlist/...` URL. Playlist names are not resolved. Tracks accept the same flexible forms as `library tracks add`.
 
 ```bash
-spogo playlist add "Road Trip" \
+spogo playlist add spotify:playlist:37i9dQZF1DXcBWIGoYBM5M \
   spotify:track:7hQJA50XrCWABAu5v6QZ4i \
   spotify:track:0sf12qNH5qcw8qpgymFOqD
 
@@ -105,8 +105,8 @@ spogo playlist tracks <playlist> [--limit N]
 Lists the items inside a playlist:
 
 ```bash
-spogo playlist tracks "Road Trip" --plain | head
-spogo playlist tracks 37i9dQZF1DXcBWIGoYBM5M --json | jq '.tracks[].name'
+spogo playlist tracks spotify:playlist:37i9dQZF1DXcBWIGoYBM5M --plain | head
+spogo playlist tracks 37i9dQZF1DXcBWIGoYBM5M --json | jq '.items[].name'
 ```
 
 ## Common patterns
@@ -121,30 +121,23 @@ spogo library tracks add "$id"
 ### Build a playlist from a search
 
 ```bash
-spogo playlist create "Lo-Fi Coding"
-spogo search track "lo-fi" --limit 20 --plain |
-  awk '{print $1}' |
-  xargs spogo playlist add "Lo-Fi Coding"
+playlist_id=$(spogo playlist create "Lo-Fi Coding" --json | jq -r .id)
+spogo search track "lo-fi" --limit 20 --json |
+  jq -r '.items[].uri' |
+  while IFS= read -r uri; do spogo playlist add "$playlist_id" "$uri"; done
 ```
 
-### Snapshot all liked tracks to a file
+### Snapshot a page of liked tracks to a file
 
 ```bash
-spogo library tracks list --limit 1000 --json > liked-tracks.json
+spogo library tracks list --limit 50 --offset 0 --json > liked-tracks-page.json
 ```
 
-### Remove duplicates from a playlist
-
-```bash
-spogo playlist tracks "Road Trip" --plain |
-  awk '{print $1}' |
-  sort | uniq -d |
-  xargs -I {} spogo playlist remove "Road Trip" {}
-```
+Listings are paginated: `--limit` is capped at 50, and `--offset` selects the next page. A large limit does not automatically fetch the whole library.
 
 ## Errors
 
-- **`playlist not found`** — confirm spelling, or pass the URI/URL instead of the name.
+- **`playlist not found`** — pass the playlist ID, URI, or URL.
 - **`not collaborative`** — only owners and explicitly added collaborators can mutate a playlist.
 - **`429 too many requests`** — honor the retry-after hint. Playlist membership operations use the Web API in every engine, so switching engines does not bypass their cooldown.
 

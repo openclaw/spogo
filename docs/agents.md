@@ -27,7 +27,7 @@ set -euo pipefail
 
 # Make sure the configured cookie store exists
 if ! spogo auth status >/dev/null 2>&1; then
-  echo "spogo: cookies missing or stale; re-run 'spogo auth import'" >&2
+  echo "spogo: cookie inventory unavailable; re-run 'spogo auth import'" >&2
   exit 3
 fi
 
@@ -59,16 +59,16 @@ spogo library tracks add "$id"
 ### Build a playlist from a search
 
 ```bash
-spogo playlist create "Weekly Lo-Fi"
-spogo search track "lo-fi 2026" --limit 30 --plain |
-  awk '{print $1}' |
-  xargs spogo playlist add "Weekly Lo-Fi"
+playlist_id=$(spogo playlist create "Weekly Lo-Fi" --json | jq -r .id)
+spogo search track "lo-fi 2026" --limit 30 --json |
+  jq -r '.items[].uri' |
+  while IFS= read -r uri; do spogo playlist add "$playlist_id" "$uri"; done
 ```
 
-### Snapshot library to JSON
+### Snapshot a library page to JSON
 
 ```bash
-spogo library tracks list --limit 1000 --json > snapshots/tracks.$(date +%F).json
+spogo library tracks list --limit 50 --json > snapshots/tracks.$(date +%F).json
 ```
 
 ### Move playback to a specific room when leaving home
@@ -88,30 +88,34 @@ sleep "${1:-1800}" && spogo pause
 spogo writes nothing to stdout that isn't useful and nothing to stderr unless something happened — perfect for cron tail logs.
 
 ```cron
-# Snapshot liked tracks daily at 04:00
-0 4 * * * /usr/local/bin/spogo library tracks list --limit 1000 --json > "$HOME/snapshots/tracks-$(date +\%F).json" 2>&1
+# Snapshot the first page of liked tracks daily at 04:00
+0 4 * * * /usr/local/bin/spogo library tracks list --limit 50 --json > "$HOME/snapshots/tracks-$(date +\%F).json"
 ```
 
 For headless servers / CI runners, either copy a working cookie jar (from a machine where you ran `auth import`) into the runner's spogo config directory, or provision an OAuth token cache created by `auth oauth login` for `--engine web --auth oauth`. Both files are credentials. Do not print them or commit them.
 
 ## CI
 
-GitHub Actions example:
+For a macOS runner with Homebrew available, use an explicit config path and owner-only files:
 
 ```yaml
 - name: Install spogo
   run: brew install steipete/tap/spogo
 
 - name: Restore cookies
+  shell: bash
   run: |
-    mkdir -p "$HOME/.config/spogo/default"
-    echo "$SPOGO_COOKIES" > "$HOME/.config/spogo/default/cookies.json"
+    umask 077
+    mkdir -p "$RUNNER_TEMP/spogo/cookies"
+    printf '%s' "$SPOGO_COOKIES" > "$RUNNER_TEMP/spogo/cookies/default.json"
   env:
     SPOGO_COOKIES: ${{ secrets.SPOGO_COOKIES }}
 
-- name: Snapshot library
-  run: spogo library tracks list --json --limit 1000 > tracks.json
+- name: Snapshot first library page
+  run: spogo --config "$RUNNER_TEMP/spogo/config.toml" library tracks list --json --limit 50 > tracks.json
 ```
+
+Listings are capped at 50 items. Fetch further pages with `--offset`; a larger limit does not download the whole library.
 
 Treat the cookie jar like a credential — it's tied to your Spotify session.
 
@@ -140,14 +144,15 @@ spogo has no built-in command allowlist or read-only mode. If you're handing it 
 
 - Run inside a separate spogo profile (`SPOGO_PROFILE=automation`) with cookies for an account that has limited permissions.
 - Wrap spogo in a thin shell script that whitelists subcommands.
-- Use the `applescript` engine on macOS — no cookies, no remote mutations possible (only local app control).
+- Do not use engine selection as an access-control boundary: explicit `applescript` can delegate library and playlist operations to remote APIs.
 
 ## Debugging an automation
 
-Always re-run with `-v` (or `-d` for full HTTP traces) when something misbehaves — diagnostic output goes to stderr and won't pollute pipelines:
+`-v` and `-d` currently do not add tracing. Capture the command error on stderr and include the version and selected engine when reporting a failure:
 
 ```bash
-spogo -d status 2>spogo.log | jq .
+spogo --version
+spogo status --json 2>spogo.log | jq .
 ```
 
 See [Troubleshooting](troubleshooting.md).

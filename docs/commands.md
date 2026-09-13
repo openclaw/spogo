@@ -30,9 +30,9 @@ Apply to every command.
 | `--json` | off | JSON output. |
 | `--plain` | off | Plain (TSV) output. |
 | `--no-color` | auto | Disable color in human output. |
-| `-q`, `--quiet` | off | Suppress non-essential stderr. |
-| `-v`, `--verbose` | off | Verbose stderr. |
-| `-d`, `--debug` | off | Debug stderr (HTTP traces). |
+| `-q`, `--quiet` | off | Suppress human result output; JSON/plain and errors remain. |
+| `-v`, `--verbose` | off | Accepted; currently no additional tracing. |
+| `-d`, `--debug` | off | Accepted; currently no additional tracing. |
 | `--no-input` | auto when not a TTY | Refuse interactive prompts. |
 
 Env overrides: every global flag has a `SPOGO_<NAME>` env equivalent. Two extras:
@@ -104,10 +104,10 @@ Fetch a single item by ID, URI, or URL.
 | Command | Returns |
 | --- | --- |
 | `spogo track info <id|url>` | One track. |
-| `spogo album info <id|url>` | One album with track listing. |
-| `spogo artist info <id|url>` | One artist + top tracks. |
+| `spogo album info <id|url>` | Album metadata. |
+| `spogo artist info <id|url>` | Artist metadata. |
 | `spogo playlist info <id|url>` | One playlist's metadata. |
-| `spogo show info <id|url>` | One show with episodes. |
+| `spogo show info <id|url>` | Show metadata. |
 | `spogo episode info <id|url>` | One episode. |
 
 ## playback
@@ -180,7 +180,7 @@ Mutate playlists. See [Library](library.md).
 | `spogo playlist remove <playlist> <track...>` | Remove tracks. |
 | `spogo playlist tracks <playlist> [--limit N]` | List a playlist's items. |
 
-`<playlist>` accepts a playlist ID, URI, URL, or owned-playlist name.
+`<playlist>` accepts a playlist ID, URI, or URL. Names are not resolved; capture the ID returned by `playlist create --json`.
 
 ## device
 

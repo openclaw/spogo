@@ -26,12 +26,10 @@ const sections = [
   ["Reference", ["commands.md", "spec.md", "RELEASING.md"]],
 ];
 
-const buildExcludes = [/^refactor\//];
-
 fs.rmSync(outDir, { recursive: true, force: true });
 fs.mkdirSync(outDir, { recursive: true });
 
-const allPages = allMarkdown(docsDir).map((file) => {
+const pages = allFiles(docsDir, ".md").map((file) => {
   const rel = path.relative(docsDir, file).replaceAll(path.sep, "/");
   const raw = fs.readFileSync(file, "utf8");
   const { frontmatter, body } = parseFrontmatter(raw);
@@ -40,7 +38,6 @@ const allPages = allMarkdown(docsDir).map((file) => {
   return { file, rel, title, outRel: outPath(rel, frontmatter), markdown: cleaned, frontmatter };
 });
 
-const pages = allPages.filter((page) => !buildExcludes.some((re) => re.test(page.rel)));
 const pageMap = new Map(pages.map((page) => [page.rel, page]));
 const permalinkMap = new Map();
 for (const page of pages) {
@@ -82,11 +79,11 @@ fs.writeFileSync(path.join(outDir, "llms.txt"), llmsTxt(), "utf8");
 console.log(`built docs site: ${path.relative(root, outDir)}`);
 
 function llmsTxt() {
-  const origin = docsOrigin();
-  const source = docsSourceUrl();
-  const name = typeof productName !== "undefined" ? productName : path.basename(root);
-  const description = typeof productDescription !== "undefined" ? productDescription : `${name} documentation index.`;
-  const install = docsInstallHint();
+  const origin = siteBase.replace(/\/$/, "");
+  const source = repoBase;
+  const name = productName;
+  const description = productDescription;
+  const install = brewInstall;
   const docPages = docsLlmsPages().map((page) => `- ${page.title}: ${pageUrl(origin, page.outRel)}`);
   const lines = [
     `# ${name}`,
@@ -108,32 +105,7 @@ function llmsTxt() {
 
 function docsLlmsPages() {
   const seen = new Set();
-  const ordered = typeof orderedPages !== "undefined" ? orderedPages : [];
-  return [...ordered, ...pages].filter((page) => page.outRel && !seen.has(page.outRel) && seen.add(page.outRel));
-}
-
-function docsOrigin() {
-  const value =
-    (typeof siteBase !== "undefined" && siteBase) ||
-    (typeof siteUrl !== "undefined" && siteUrl) ||
-    (typeof customDomain !== "undefined" && customDomain ? `https://${customDomain}` : "");
-  return value.replace(/\/$/, "");
-}
-
-function docsSourceUrl() {
-  if (typeof repoBase !== "undefined") return repoBase;
-  if (typeof repoUrl !== "undefined") return repoUrl;
-  if (typeof repoEditBase !== "undefined") return repoEditBase.replace(/\/edit\/main\/docs\/?$/, "");
-  return "";
-}
-
-function docsInstallHint() {
-  if (typeof installCommand !== "undefined") return installCommand;
-  if (typeof installLine !== "undefined") return installLine;
-  if (typeof installCmd !== "undefined") return installCmd;
-  if (typeof installSnippet !== "undefined") return installSnippet;
-  if (typeof brewInstall !== "undefined") return brewInstall;
-  return "";
+  return [...orderedPages, ...pages].filter((page) => page.outRel && !seen.has(page.outRel) && seen.add(page.outRel));
 }
 
 function pageUrl(origin, outRel) {
@@ -187,13 +159,13 @@ function normalizePermalink(value) {
   return v;
 }
 
-function allMarkdown(dir) {
+function allFiles(dir, extension) {
   return fs
     .readdirSync(dir, { withFileTypes: true })
     .flatMap((entry) => {
       const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) return allMarkdown(full);
-      return entry.name.endsWith(".md") ? [full] : [];
+      if (entry.isDirectory()) return allFiles(full, extension);
+      return entry.name.endsWith(extension) ? [full] : [];
     })
     .sort();
 }
@@ -613,7 +585,7 @@ function escapeAttr(value) {
 function validateLinks(outputDir) {
   const failures = [];
   const placeholderHrefs = /^(url|path|file|dir|name|id)$/i;
-  for (const file of allHtml(outputDir)) {
+  for (const file of allFiles(outputDir, ".html")) {
     const html = fs.readFileSync(file, "utf8");
     for (const match of html.matchAll(/href="([^"]+)"/g)) {
       const href = match[1];
@@ -641,15 +613,4 @@ function validateLinks(outputDir) {
   if (failures.length) {
     throw new Error(`broken docs links:\n${failures.join("\n")}`);
   }
-}
-
-function allHtml(dir) {
-  return fs
-    .readdirSync(dir, { withFileTypes: true })
-    .flatMap((entry) => {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) return allHtml(full);
-      return entry.name.endsWith(".html") ? [full] : [];
-    })
-    .sort();
 }

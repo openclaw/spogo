@@ -13,15 +13,15 @@ The queue is the up-next list managed by Spotify Connect. It survives device tra
 spogo queue add <id|url>
 ```
 
-Appends one item to the queue. Accepts a track URI, URL, or bare ID (combine with `--type` for non-tracks):
+Appends one track to the queue. Accepts a track URI, URL, or bare ID:
 
 ```bash
 spogo queue add spotify:track:7hQJA50XrCWABAu5v6QZ4i
 spogo queue add https://open.spotify.com/track/4PTG3Z6ehGkBFwjybzWkR8
-spogo queue add 0sf12qNH5qcw8qpgymFOqD --type track
+spogo queue add 0sf12qNH5qcw8qpgymFOqD
 ```
 
-`queue add` requires an active device. Open Spotify on a phone/desktop or pass `--device <name|id>`.
+`queue add` requires an active device. Start playback on a phone/desktop, or transfer to an available device with `spogo device set <name|id>` first. Connect queue additions do not resolve the global `--device` selector.
 
 ## queue show
 
@@ -31,11 +31,10 @@ spogo queue show --plain
 spogo queue show --json
 ```
 
-Prints the currently-playing item plus the upcoming queue. Plain mode emits one item per line:
+Human and JSON output include the currently-playing item. Plain mode emits only upcoming tracks, with columns `type`, `ID`, `name`, `artists`, `album`, `URI`:
 
 ```
-spotify:track:...   Track Name              Artist Name
-spotify:track:...   Another Track           Another Artist
+track   track-id   Track Name   Artist Name   Album Name   spotify:track:track-id
 ```
 
 JSON mode includes `currently_playing` and a `queue` array with full track objects.
@@ -53,19 +52,19 @@ spogo play spotify:track:7hQJA50XrCWABAu5v6QZ4i      # any single track
 ### Queue up the top results of a search
 
 ```bash
-spogo search track "miles davis" --limit 5 --plain |
-  awk '{print $1}' |
-  while read uri; do spogo queue add "$uri"; done
+spogo search track "miles davis" --limit 5 --json |
+  jq -r '.items[].uri' |
+  while IFS= read -r uri; do spogo queue add "$uri"; done
 ```
 
-### Queue an entire playlist's worth of next-up
+### Queue a page of playlist tracks
 
-`queue add` only takes one item — to queue every track from a playlist:
+`queue add` takes one track. To queue a page of playlist tracks (listings are capped at 50; use `--offset` for further pages):
 
 ```bash
-spogo playlist tracks "Road Trip" --plain |
-  awk '{print $1}' |
-  while read uri; do spogo queue add "$uri"; done
+spogo playlist tracks spotify:playlist:37i9dQZF1DXcBWIGoYBM5M --json |
+  jq -r '.items[].uri' |
+  while IFS= read -r uri; do spogo queue add "$uri"; done
 ```
 
 For long playlists this is N HTTP calls — usually faster to just `play` the playlist as a context.
