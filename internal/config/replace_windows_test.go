@@ -3,11 +3,20 @@
 package config
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 )
+
+func TestReplaceConfigReturnsPermanentFailure(t *testing.T) {
+	dir := t.TempDir()
+	err := replaceConfigFile(filepath.Join(dir, "missing"), filepath.Join(dir, "config"))
+	if !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("expected original missing-source error, got %v", err)
+	}
+}
 
 func TestReplaceConfigWaitsForWindowsReader(t *testing.T) {
 	dir := t.TempDir()

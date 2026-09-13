@@ -11,11 +11,12 @@ import (
 )
 
 func replaceConfigFile(source, destination string) error {
-	// Go's Windows readers do not share deletion. Give an in-progress config
-	// read time to close its handle before replacing the snapshot.
+	// Windows reports either sharing violation or access denied when a reader
+	// does not share deletion. Bound retries so permanent permission errors return.
 	for attempt := 0; ; attempt++ {
 		err := os.Rename(source, destination)
-		if !errors.Is(err, windows.ERROR_SHARING_VIOLATION) || attempt >= 100 {
+		busy := errors.Is(err, windows.ERROR_SHARING_VIOLATION) || errors.Is(err, windows.ERROR_ACCESS_DENIED)
+		if !busy || attempt >= 100 {
 			return err
 		}
 		time.Sleep(10 * time.Millisecond)
