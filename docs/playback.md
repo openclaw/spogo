@@ -16,7 +16,7 @@ spogo play [<id|url>] [--type <track|album|playlist|show|episode>] [--shuffle]
 Accepts:
 
 - A Spotify URI: `spotify:track:7hQJA50XrCWABAu5v6QZ4i`, `spotify:album:...`, `spotify:playlist:...`, `spotify:show:...`, `spotify:episode:...`, `spotify:artist:...`.
-- A web URL: `https://open.spotify.com/track/7hQJA50XrCWABAu5v6QZ4i`.
+- A web URL: `https://open.spotify.com/track/7hQJA50XrCWABAu5v6QZ4i`. Locale-prefixed (`/intl-de/track/...`) and embedded (`/embed/track/...`) Spotify URLs work too.
 - A bare ID — combine with `--type` to disambiguate.
 - No argument — resumes the current item.
 

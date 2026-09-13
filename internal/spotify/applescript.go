@@ -25,8 +25,13 @@ func NewAppleScriptClient(opts AppleScriptOptions) (API, error) {
 	}, nil
 }
 
-func (c *AppleScriptClient) runScript(ctx context.Context, script string) (string, error) {
-	cmd := exec.CommandContext(ctx, "osascript", "-e", script)
+func (c *AppleScriptClient) runScript(ctx context.Context, script string, args ...string) (string, error) {
+	commandArgs := []string{"-e", script}
+	if len(args) > 0 {
+		commandArgs = append(commandArgs, "--")
+		commandArgs = append(commandArgs, args...)
+	}
+	cmd := exec.CommandContext(ctx, "osascript", commandArgs...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		msg := strings.TrimSpace(string(out))
@@ -39,13 +44,13 @@ func (c *AppleScriptClient) runScript(ctx context.Context, script string) (strin
 }
 
 func (c *AppleScriptClient) Play(ctx context.Context, uri string) error {
-	var script string
 	if uri == "" {
-		script = `tell application "Spotify" to play`
-	} else {
-		script = fmt.Sprintf(`tell application "Spotify" to play track "%s"`, uri)
+		_, err := c.runScript(ctx, `tell application "Spotify" to play`)
+		return err
 	}
-	_, err := c.runScript(ctx, script)
+	_, err := c.runScript(ctx, `on run argv
+	tell application "Spotify" to play track (item 1 of argv)
+end run`, uri)
 	return err
 }
 

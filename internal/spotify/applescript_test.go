@@ -56,7 +56,8 @@ func TestAppleScriptClientLocalCommands(t *testing.T) {
 	log := string(logData)
 	for _, want := range []string{
 		"to play",
-		`play track "spotify:track:1"`,
+		"play track (item 1 of argv)",
+		"spotify:track:1",
 		"to pause",
 		"to next track",
 		"to previous track",
@@ -216,7 +217,7 @@ func installFakeOsaScript(t *testing.T) string {
 	logPath := filepath.Join(dir, "osascript.log")
 	scriptPath := filepath.Join(dir, "osascript")
 	script := `#!/bin/sh
-printf '%s\n' "$2" >> "$SPOGO_OSASCRIPT_LOG"
+printf '%s\0' "$@" >> "$SPOGO_OSASCRIPT_LOG"
 if [ -n "$SPOGO_OSASCRIPT_ERROR" ]; then
   printf '%s\n' "$SPOGO_OSASCRIPT_ERROR"
   exit 1
@@ -229,4 +230,23 @@ printf '%s\n' "$SPOGO_OSASCRIPT_OUTPUT"
 	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
 	t.Setenv("SPOGO_OSASCRIPT_LOG", logPath)
 	return logPath
+}
+
+func TestAppleScriptPlayKeepsURIOutOfSource(t *testing.T) {
+	logPath := installFakeOsaScript(t)
+	uri := "spotify:track:quoted\"\\track\nliteral"
+	if err := (&AppleScriptClient{}).Play(context.Background(), uri); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(logPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	args := strings.Split(strings.TrimSuffix(string(data), "\x00"), "\x00")
+	if len(args) != 4 || args[0] != "-e" || args[2] != "--" || args[3] != uri {
+		t.Fatalf("unexpected osascript arguments: %q", args)
+	}
+	if strings.Contains(args[1], uri) || !strings.Contains(args[1], "item 1 of argv") {
+		t.Fatalf("URI must be passed as data, script: %q", args[1])
+	}
 }

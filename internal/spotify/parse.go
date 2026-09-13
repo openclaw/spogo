@@ -3,7 +3,6 @@ package spotify
 import (
 	"errors"
 	"net/url"
-	"path"
 	"strings"
 )
 
@@ -29,38 +28,45 @@ func ParseResource(input string) (Resource, error) {
 	if input == "" {
 		return Resource{}, errors.New("empty input")
 	}
-	if strings.HasPrefix(input, "spotify:") {
+	if strings.HasPrefix(strings.ToLower(input), "spotify:") {
 		parts := strings.Split(input, ":")
-		if len(parts) < 3 {
+		if len(parts) != 3 {
 			return Resource{}, errors.New("invalid spotify uri")
 		}
-		kind := parts[1]
-		id := parts[2]
-		if !isSupportedType(kind) {
-			return Resource{}, ErrUnsupportedType
-		}
-		return Resource{Type: kind, ID: id, URI: "spotify:" + kind + ":" + id}, nil
+		return typedResource(parts[1], parts[2])
 	}
-	if strings.HasPrefix(input, "open.spotify.com/") {
+	if strings.HasPrefix(strings.ToLower(input), "open.spotify.com/") {
 		input = "https://" + input
 	}
-	if strings.Contains(input, "open.spotify.com/") {
+	if strings.Contains(input, "://") {
 		parsed, err := url.Parse(input)
 		if err != nil {
 			return Resource{}, err
 		}
-		segments := strings.Split(strings.Trim(path.Clean(parsed.Path), "/"), "/")
-		if len(segments) < 2 {
+		if (parsed.Scheme != "https" && parsed.Scheme != "http") ||
+			!strings.EqualFold(parsed.Hostname(), "open.spotify.com") || parsed.User != nil {
 			return Resource{}, errors.New("invalid spotify url")
 		}
-		kind := segments[0]
-		id := segments[1]
-		if !isSupportedType(kind) {
-			return Resource{}, ErrUnsupportedType
+		segments := strings.Split(strings.Trim(parsed.Path, "/"), "/")
+		if len(segments) == 3 && (strings.HasPrefix(segments[0], "intl-") || segments[0] == "embed") {
+			segments = segments[1:]
 		}
-		return Resource{Type: kind, ID: id, URI: "spotify:" + kind + ":" + id}, nil
+		if len(segments) != 2 {
+			return Resource{}, errors.New("invalid spotify url")
+		}
+		return typedResource(segments[0], segments[1])
 	}
 	return Resource{ID: input}, nil
+}
+
+func typedResource(kind, id string) (Resource, error) {
+	if !isSupportedType(kind) {
+		return Resource{}, ErrUnsupportedType
+	}
+	if strings.TrimSpace(id) == "" {
+		return Resource{}, errors.New("spotify id required")
+	}
+	return Resource{Type: kind, ID: id, URI: "spotify:" + kind + ":" + id}, nil
 }
 
 func ParseTypedID(input, expectedType string) (Resource, error) {

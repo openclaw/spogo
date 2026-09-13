@@ -26,3 +26,33 @@ func TestParseTypedIDNoExpectedType(t *testing.T) {
 		t.Fatalf("unexpected: %#v", res)
 	}
 }
+
+func TestParseResourceShareURLs(t *testing.T) {
+	for _, input := range []string{
+		"https://open.spotify.com/intl-de/track/abc?si=share",
+		"open.spotify.com/intl-pt/track/abc",
+		"https://OPEN.SPOTIFY.COM/track/abc",
+		"HTTPS://open.spotify.com/track/abc",
+		"hTtP://open.spotify.com/track/abc",
+		"SPOTIFY:track:abc",
+		"https://open.spotify.com/embed/track/abc",
+	} {
+		res, err := ParseResource(input)
+		if err != nil || res.URI != "spotify:track:abc" {
+			t.Errorf("ParseResource(%q) = %+v, %v", input, res, err)
+		}
+	}
+}
+
+func TestParseResourceRejectsMalformedResources(t *testing.T) {
+	for _, input := range []string{
+		"spotify:track:", "spotify:track:abc:extra",
+		"https://open.spotify.com/track/", "https://open.spotify.com/track/abc/extra",
+		"https://example.test/track/abc?ref=open.spotify.com/",
+		"https://user@open.spotify.com/track/abc",
+	} {
+		if _, err := ParseResource(input); err == nil {
+			t.Errorf("accepted malformed resource %q", input)
+		}
+	}
+}

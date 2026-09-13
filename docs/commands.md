@@ -84,6 +84,8 @@ Cookie and official Spotify OAuth management. See [Auth](auth.md).
 
 ## search
 
+Use `--` before positional text that begins with a dash, for example `spogo search track -- --no-input`. Global flags remain valid before or after the command.
+
 Browse the catalog. Each subcommand takes a query plus `--limit N` and `--offset N`.
 
 | Command | Returns |

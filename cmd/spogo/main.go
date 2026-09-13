@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"os"
@@ -39,7 +38,6 @@ func run(args []string, out io.Writer, errOut io.Writer) int {
 	if exitCode >= 0 {
 		return exitCode
 	}
-	args = normalizeArgs(args)
 	kctx, err := parser.Parse(args)
 	if exitCode >= 0 {
 		return exitCode
@@ -65,7 +63,8 @@ func run(args []string, out io.Writer, errOut io.Writer) int {
 		_, _ = fmt.Fprintln(errOut, err)
 		return 1
 	}
-	ctx.SetCommandContext(context.Background())
+	ctx.Output.Out = out
+	ctx.Output.Err = errOut
 	if err := ctx.ValidateProfile(); err != nil {
 		_, _ = fmt.Fprintln(errOut, err)
 		return 2
@@ -75,26 +74,4 @@ func run(args []string, out io.Writer, errOut io.Writer) int {
 		return app.ExitCode(err)
 	}
 	return 0
-}
-
-func normalizeArgs(args []string) []string {
-	if len(args) == 0 {
-		return args
-	}
-	front := make([]string, 0, 1)
-	rest := make([]string, 0, len(args))
-	for _, arg := range args {
-		if arg == "--no-input" {
-			front = append(front, arg)
-			continue
-		}
-		rest = append(rest, arg)
-	}
-	if len(front) == 0 {
-		return args
-	}
-	normalized := make([]string, 0, len(args))
-	normalized = append(normalized, front...)
-	normalized = append(normalized, rest...)
-	return normalized
 }

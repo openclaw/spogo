@@ -229,14 +229,6 @@ func TestRunOAuthStatusMismatchReturnsAuthExitCode(t *testing.T) {
 	}
 }
 
-func TestNormalizeArgsMovesNoInput(t *testing.T) {
-	got := normalizeArgs([]string{"auth", "paste", "--no-input", "--cookie-path", "cookies.json"})
-	want := []string{"--no-input", "auth", "paste", "--cookie-path", "cookies.json"}
-	if fmt.Sprint(got) != fmt.Sprint(want) {
-		t.Fatalf("got %v, want %v", got, want)
-	}
-}
-
 func TestMain(t *testing.T) {
 	origArgs := os.Args
 	origExit := exitFunc
