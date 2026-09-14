@@ -1,14 +1,16 @@
 # Changelog
 
-## Unreleased
+## 0.13.0 - 2026-09-13
+
+**Highlights:** Long Spotify cooldowns are honored without premature retries, playlists keep repeated tracks, and locale-prefixed Spotify URLs are accepted while malformed URIs are rejected.
 
 - Honor long Spotify cooldowns without premature retries, retain valid tokens on throttling, and keep cookie-token requests from changing shared HTTP clients
-- Preserve literal CLI arguments and pass playback URIs to AppleScript as data; accept locale-prefixed and embedded Spotify URLs
 - Preserve repeated tracks and their positions when listing Connect playlists while keeping library listings deduplicated
+- Preserve literal CLI arguments and pass playback URIs to AppleScript as data; accept locale-prefixed and embedded Spotify URLs
 - Compatibility: reject malformed Spotify URIs, missing identifiers, and unrelated URLs instead of silently truncating or misidentifying them
 - Let Windows config updates finish after concurrent readers close, including when replacement reports access denied
-- Refresh the SQLite runtime dependency and preferred Go toolchain to 1.27.1 while retaining Go 1.26.7 support; validate macOS, Windows, the Go floor, race coverage, and docs in CI
 - Correct command, output, cookie-cache, and automation documentation to match the CLI, including working playlist pipelines and release asset names
+- Refresh the SQLite runtime dependency and preferred Go toolchain to 1.27.1 while retaining Go 1.26.7 support; validate macOS, Windows, the Go floor, race coverage, and docs in CI
 
 ## 0.12.0 - 2026-09-11
 

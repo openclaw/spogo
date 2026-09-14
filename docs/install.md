@@ -27,7 +27,7 @@ Builds from source with a minimum of Go 1.26.7.
 
 Grab a tarball or zip for your OS/arch from the [releases page](https://github.com/openclaw/spogo/releases) and drop the `spogo` binary somewhere on `PATH`:
 
-Asset names include the version, lowercase OS, and Go architecture, for example `spogo_0.12.0_darwin_arm64.tar.gz` or `spogo_0.12.0_windows_amd64.zip`. Select the exact asset on the release page, extract it, and run `spogo --version`. `uname` output is not an asset filename.
+Asset names include the version, lowercase OS, and Go architecture, for example `spogo_0.13.0_darwin_arm64.tar.gz` or `spogo_0.13.0_windows_amd64.zip`. Select the exact asset on the release page, extract it, and run `spogo --version`. `uname` output is not an asset filename.
 
 ## Build from source
 
