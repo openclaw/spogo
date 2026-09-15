@@ -75,7 +75,7 @@ func (cmd *UserTopTracksCmd) Run(ctx *app.Context) error {
 	if err != nil {
 		return err
 	}
-	plain, human := renderTopTracks(ctx.Output, res.Items)
+	plain, human := renderTopTracks(ctx.Output, res.Items, res.Offset)
 	payload := map[string]any{
 		"total":      res.Total,
 		"limit":      res.Limit,
@@ -192,11 +192,11 @@ func parseRFC3339Milli(s string) (int64, error) {
 	return t.UnixMilli(), nil
 }
 
-func renderTopTracks(w *output.Writer, items []spotify.Item) (plain []string, human []string) {
+func renderTopTracks(w *output.Writer, items []spotify.Item, offset int) (plain []string, human []string) {
 	plain = make([]string, 0, len(items))
 	human = make([]string, 0, len(items))
 	for i, item := range items {
-		rank := i + 1
+		rank := offset + i + 1
 		plain = append(plain, fmt.Sprintf("%d\ttrack\t%s\t%s\t%s\t%s\t%s", rank, item.ID, item.Name, strings.Join(item.Artists, ", "), item.Album, item.URI))
 		human = append(human, fmt.Sprintf("%d. %s", rank, humanItemLine(w, item.Name, strings.Join(item.Artists, ", "), item.Album)))
 	}

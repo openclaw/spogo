@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/steipete/spogo/internal/output"
 	"github.com/steipete/spogo/internal/spotify"
@@ -118,10 +117,10 @@ func humanDuration(ms int) string {
 	if ms <= 0 {
 		return "0s"
 	}
-	d := time.Duration(ms) * time.Millisecond
-	h := int(d.Hours())
-	m := int(d.Minutes()) % 60
-	s := int(d.Seconds()) % 60
+	seconds := ms / 1000
+	h := seconds / 3600
+	m := seconds / 60 % 60
+	s := seconds % 60
 	if h > 0 {
 		return fmt.Sprintf("%dh%02dm%02ds", h, m, s)
 	}

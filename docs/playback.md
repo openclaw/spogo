@@ -60,6 +60,8 @@ spogo seek 1:30         # mm:ss
 spogo seek 0            # back to start
 ```
 
+Positions must be non-negative. In `mm:ss` form, seconds must be `0` through `59`; positions that exceed the CLI's integer range are rejected before playback. Large valid values are converted directly to milliseconds without duration overflow.
+
 ## volume
 
 ```bash

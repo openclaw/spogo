@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/steipete/spogo/internal/app"
 	"github.com/steipete/spogo/internal/spotify"
@@ -145,11 +145,11 @@ func (cmd *PrevCmd) Run(ctx *app.Context) error {
 }
 
 func (cmd *SeekCmd) Run(ctx *app.Context) error {
-	client, cmdCtx, err := spotifyClient(ctx)
+	position, err := parsePosition(cmd.Position)
 	if err != nil {
 		return err
 	}
-	position, err := parsePosition(cmd.Position)
+	client, cmdCtx, err := spotifyClient(ctx)
 	if err != nil {
 		return err
 	}
@@ -235,12 +235,23 @@ func parsePosition(input string) (int, error) {
 		if err != nil {
 			return 0, err
 		}
-		d := time.Duration(min)*time.Minute + time.Duration(sec)*time.Second
-		return int(d / time.Millisecond), nil
+		if min < 0 || sec < 0 {
+			return 0, fmt.Errorf("position must be non-negative")
+		}
+		if sec >= 60 {
+			return 0, fmt.Errorf("seconds must be between 0 and 59")
+		}
+		if min > (math.MaxInt-sec*1000)/60000 {
+			return 0, fmt.Errorf("position out of range")
+		}
+		return min*60000 + sec*1000, nil
 	}
 	ms, err := strconv.Atoi(input)
 	if err != nil {
 		return 0, err
+	}
+	if ms < 0 {
+		return 0, fmt.Errorf("position must be non-negative")
 	}
 	return ms, nil
 }

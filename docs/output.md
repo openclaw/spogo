@@ -30,6 +30,8 @@ Rows have no header. Field order is stable:
 | Top track | rank, then the track columns above |
 | History item | played-at timestamp, then the track columns above |
 
+Top-track ranks are one-based positions in the full result set: `user top-tracks --offset 20` starts at rank `21` in both human and plain output.
+
 `queue show --plain` prints upcoming tracks only. JSON includes the current item separately. Successful mutation commands generally print `ok`; commands with additional results are described in their command guides.
 
 Artists are joined with a comma and space. Text fields currently pass tabs and newlines through unchanged; use JSON when arbitrary metadata must round-trip safely.

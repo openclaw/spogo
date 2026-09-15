@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Reject negative, malformed, and overflowing seek positions before playback; preserve large valid millisecond values and include pagination offsets in top-track ranks
+
 - Keep cookie and Connect cache paths inside their profile directories, preventing profile names from overwriting or clearing another profile's credentials
 
 ## 0.13.0 - 2026-09-13
