@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -231,7 +232,7 @@ func CookiePath(configPath, profile string) string {
 		return ""
 	}
 	base := filepath.Dir(configPath)
-	return filepath.Join(base, "cookies", profile+".json")
+	return filepath.Join(base, "cookies", profileFilename(profile))
 }
 
 func CachePath(configPath, profile string) string {
@@ -242,7 +243,7 @@ func CachePath(configPath, profile string) string {
 		return ""
 	}
 	base := filepath.Dir(configPath)
-	return filepath.Join(base, "cache", profile+".json")
+	return filepath.Join(base, "cache", profileFilename(profile))
 }
 
 func OAuthTokenPath(configPath, profile string) string {
@@ -253,14 +254,19 @@ func OAuthTokenPath(configPath, profile string) string {
 		return ""
 	}
 	base := filepath.Dir(configPath)
-	return filepath.Join(base, "oauth", oauthProfileFilename(profile))
+	return filepath.Join(base, "oauth", profileFilename(profile))
 }
 
-func oauthProfileFilename(profile string) string {
+func profileFilename(profile string) string {
+	name := "~" + hex.EncodeToString([]byte(profile)) + ".json"
 	if isPortableProfileFilename(profile) {
-		return profile + ".json"
+		name = profile + ".json"
 	}
-	return "~" + hex.EncodeToString([]byte(profile)) + ".json"
+	// Leave room for the OAuth lifecycle lock suffix on 255-byte filesystems.
+	if len(name) > 240 {
+		return fmt.Sprintf("~sha256-%x.json", sha256.Sum256([]byte(profile)))
+	}
+	return name
 }
 
 func isPortableProfileFilename(profile string) bool {

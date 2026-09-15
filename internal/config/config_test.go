@@ -133,11 +133,28 @@ func TestOAuthTokenPath(t *testing.T) {
 	}
 }
 
-func TestOAuthTokenPathContainsUnsafeProfiles(t *testing.T) {
+func TestProfilePathsContainUnsafeProfiles(t *testing.T) {
+	for _, tc := range []struct {
+		dir  string
+		path func(string, string) string
+	}{
+		{"cookies", CookiePath},
+		{"cache", CachePath},
+		{"oauth", OAuthTokenPath},
+	} {
+		t.Run(tc.dir, func(t *testing.T) {
+			testProfilePathsContainUnsafeProfiles(t, tc.dir, tc.path)
+		})
+	}
+}
+
+func testProfilePathsContainUnsafeProfiles(t *testing.T, directory string, pathFor func(string, string) string) {
+	t.Helper()
 	configPath := filepath.Join(t.TempDir(), "spogo", "config.toml")
-	oauthDir := filepath.Join(filepath.Dir(configPath), "oauth")
+	profileDir := filepath.Join(filepath.Dir(configPath), directory)
 	unsafeProfiles := []string{
 		"../other",
+		"../cookies/victim",
 		"work/personal",
 		`work\personal`,
 		".",
@@ -150,14 +167,21 @@ func TestOAuthTokenPathContainsUnsafeProfiles(t *testing.T) {
 		"00G ",
 		"WORK",
 		"Work",
+		"~576f726b",
+		strings.Repeat("A", 125),
+		strings.Repeat("a", 251),
+		strings.Repeat("日本語", 50),
 	}
 	seen := map[string]string{}
 	for _, profile := range unsafeProfiles {
-		path := OAuthTokenPath(configPath, profile)
-		if filepath.Dir(path) != oauthDir {
-			t.Fatalf("profile %q escaped OAuth directory: %s", profile, path)
+		path := pathFor(configPath, profile)
+		if filepath.Dir(path) != profileDir {
+			t.Fatalf("profile %q escaped %s directory: %s", profile, directory, path)
 		}
 		name := filepath.Base(path)
+		if len(name+".lifecycle.lock") > 255 {
+			t.Fatalf("profile %q exceeds the filesystem filename limit: %s", profile, name)
+		}
 		if !strings.HasPrefix(name, "~") || filepath.Ext(name) != ".json" {
 			t.Fatalf("profile %q was not safely encoded: %s", profile, name)
 		}
@@ -170,8 +194,11 @@ func TestOAuthTokenPathContainsUnsafeProfiles(t *testing.T) {
 		}
 		seen[collisionKey] = profile
 	}
-	if got := filepath.Base(OAuthTokenPath(configPath, "work.prod-1")); got != "work.prod-1.json" {
+	if got := filepath.Base(pathFor(configPath, "work.prod-1")); got != "work.prod-1.json" {
 		t.Fatalf("portable profile path changed: %s", got)
+	}
+	if pathFor(configPath, "") != pathFor(configPath, DefaultProfile) {
+		t.Fatal("empty profile must select the default profile")
 	}
 }
 

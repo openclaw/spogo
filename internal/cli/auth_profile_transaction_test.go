@@ -10,10 +10,38 @@ import (
 
 	"github.com/gofrs/flock"
 	"github.com/steipete/spogo/internal/config"
+	"github.com/steipete/spogo/internal/cookies"
 	"github.com/steipete/spogo/internal/output"
 	"github.com/steipete/spogo/internal/spotify"
 	"github.com/steipete/spogo/internal/testutil"
 )
+
+func TestCookiePasteCannotOverwriteOrClearAnotherProfile(t *testing.T) {
+	ctx, _, _ := testutil.NewTestContext(t, output.FormatPlain)
+	ctx.ConfigPath = filepath.Join(t.TempDir(), "config.toml")
+	ctx.ProfileKey = "../cookies/victim"
+	ctx.Config = config.Default()
+	victimPath := config.CookiePath(ctx.ConfigPath, "victim")
+	if err := os.MkdirAll(filepath.Dir(victimPath), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	const sentinel = "synthetic existing profile"
+	if err := os.WriteFile(victimPath, []byte(sentinel), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	withStdin(t, "sp_dc=synthetic\nsp_t=synthetic\n", func() {
+		if err := (&AuthPasteCmd{}).Run(ctx); err != nil {
+			t.Fatal(err)
+		}
+	})
+	if got, err := os.ReadFile(victimPath); err != nil || string(got) != sentinel {
+		t.Fatalf("another profile's cookies changed: %q, %v", got, err)
+	}
+	stored, err := cookies.Read(ctx.ResolveCookiePath())
+	if err != nil || len(stored) != 2 {
+		t.Fatalf("new profile's cookies were not retained: count=%d, %v", len(stored), err)
+	}
+}
 
 func TestCookiePastePreservesNewerOAuthSettings(t *testing.T) {
 	for _, auth := range []string{"oauth", ""} {

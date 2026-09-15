@@ -200,6 +200,8 @@ spogo search track "test" --limit 1
 
 Profiles keep cookie jars, OAuth token caches, and settings separate:
 
+Default cookie, Connect cache, and OAuth filenames use the profile name when it is portable lowercase ASCII (letters, digits, dots, hyphens, and underscores). Other names, including path separators, uppercase letters, and Windows reserved names, are encoded to keep profiles distinct and inside their respective directories. Long names use a SHA-256 digest to stay within filesystem filename limits, including lock-file suffixes. Existing explicit `cookie_path` settings remain supported. After upgrading, unusual profile names get a fresh Connect cache; if cookies were stored only at an old implicit path, re-import them or set an explicit `cookie_path`. spogo does not read or delete legacy implicit paths that could belong to another profile.
+
 ```bash
 spogo --profile work auth import --browser chrome --browser-profile "Profile 1"
 spogo --profile personal auth oauth login --client-id YOUR_SPOTIFY_CLIENT_ID
