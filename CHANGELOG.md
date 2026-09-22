@@ -1,5 +1,7 @@
 # Changelog
 
+## Unreleased
+
 ## 0.13.1 - 2026-09-22
 
 **Highlights:** Protect stored credentials with atomic cookie writes and isolated profile paths, and target playback devices reliably by name or opaque ID.
