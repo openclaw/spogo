@@ -275,16 +275,8 @@ func connectTransferSourceID(state connectState) string {
 }
 
 func resolveConnectTargetDeviceID(state connectState, selector string) string {
-	selector = strings.TrimSpace(selector)
-	if selector == "" {
-		return ""
-	}
-	for _, device := range mapDevices(state) {
-		if strings.EqualFold(device.ID, selector) || strings.EqualFold(device.Name, selector) {
-			return device.ID
-		}
-	}
-	return ""
+	device, _ := FindDevice(mapDevices(state), selector)
+	return device.ID
 }
 
 func playCommandPayload(uri string) map[string]any {

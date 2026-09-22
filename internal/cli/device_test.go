@@ -109,3 +109,37 @@ func TestActiveMarker(t *testing.T) {
 		t.Fatalf("expected marker")
 	}
 }
+
+func TestDeviceSetKeepsOpaqueIDsCaseSensitive(t *testing.T) {
+	ctx, _, _ := testutil.NewTestContext(t, output.FormatPlain)
+	ctx.SetSpotify(&testutil.SpotifyMock{
+		DevicesFn: func(context.Context) ([]spotify.Device, error) {
+			return []spotify.Device{{ID: "OPAQUE-ID", Name: "Desk"}}, nil
+		},
+		TransferFn: func(_ context.Context, id string) error {
+			if id != "opaque-id" {
+				t.Errorf("transfer ID = %q, want original opaque-id", id)
+			}
+			return nil
+		},
+	})
+	if err := (&DeviceSetCmd{Device: "opaque-id"}).Run(ctx); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDeviceSetRejectsNamedDeviceWithoutID(t *testing.T) {
+	ctx, _, _ := testutil.NewTestContext(t, output.FormatPlain)
+	ctx.SetSpotify(&testutil.SpotifyMock{
+		DevicesFn: func(context.Context) ([]spotify.Device, error) {
+			return []spotify.Device{{Name: "Desk"}}, nil
+		},
+		TransferFn: func(context.Context, string) error {
+			t.Error("transfer sent for unusable device")
+			return nil
+		},
+	})
+	if err := (&DeviceSetCmd{Device: "Desk"}).Run(ctx); err == nil {
+		t.Fatal("expected unusable device error")
+	}
+}

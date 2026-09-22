@@ -19,20 +19,8 @@ func (c *Client) put(ctx context.Context, path string, payload any) error {
 	return c.send(ctx, http.MethodPut, path, nil, payload, nil)
 }
 
-func (c *Client) post(ctx context.Context, path string, payload any) error {
-	return c.send(ctx, http.MethodPost, path, nil, payload, nil)
-}
-
 func (c *Client) postJSON(ctx context.Context, path string, payload any, dest any) error {
 	return c.send(ctx, http.MethodPost, path, nil, payload, dest)
-}
-
-func (c *Client) putParams(ctx context.Context, path string, params url.Values) error {
-	return c.send(ctx, http.MethodPut, path, params, nil, nil)
-}
-
-func (c *Client) postParams(ctx context.Context, path string, params url.Values) error {
-	return c.send(ctx, http.MethodPost, path, params, nil, nil)
 }
 
 func (c *Client) send(ctx context.Context, method, path string, params url.Values, payload any, dest any) error {
@@ -43,7 +31,7 @@ func (c *Client) send(ctx context.Context, method, path string, params url.Value
 	for attempt := 0; attempt < maxAttempts; attempt++ {
 		requestURL := c.baseURL + path
 		if params == nil {
-			if c.market != "" || c.language != "" || ((method == http.MethodPut || method == http.MethodPost || method == http.MethodDelete) && c.device != "") {
+			if c.market != "" || c.language != "" {
 				params = url.Values{}
 			}
 		}
@@ -53,11 +41,6 @@ func (c *Client) send(ctx context.Context, method, path string, params url.Value
 			}
 			if c.language != "" && params.Get("locale") == "" {
 				params.Set("locale", c.language)
-			}
-			if method == http.MethodPut || method == http.MethodPost || method == http.MethodDelete {
-				if c.device != "" && params.Get("device_id") == "" {
-					params.Set("device_id", c.device)
-				}
 			}
 			if encoded := params.Encode(); encoded != "" {
 				requestURL += "?" + encoded

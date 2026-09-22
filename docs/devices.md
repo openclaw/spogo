@@ -28,7 +28,12 @@ Transfers playback to the named device (case-insensitive exact match) or device 
 
 ## --device flag (per-command)
 
-`--device` is a global flag. The Web API sends its value as a device ID on mutations; Connect uses it to find a target for `play` when no device is active:
+`--device` is a global flag. The Web API resolves a case-insensitive exact
+device name to its current device ID when a playback command rejects the
+selector as not found. Raw device IDs are passed through unchanged and do not
+require device-list access when accepted. Across engines, IDs are case-sensitive
+and exact ID matches take priority over names. Connect uses the selector to find a target for `play` when no
+device is active:
 
 ```bash
 spogo play spotify:track:... --device "Kitchen"

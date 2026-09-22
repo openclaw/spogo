@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 )
 
@@ -43,43 +44,35 @@ func (c *Client) Play(ctx context.Context, uri string) error {
 			payload["uris"] = []string{uri}
 		}
 	}
-	return c.put(ctx, "/me/player/play", payload)
+	return c.sendPlayback(ctx, http.MethodPut, "/me/player/play", nil, payload)
 }
 
 func (c *Client) Pause(ctx context.Context) error {
-	return c.put(ctx, "/me/player/pause", nil)
+	return c.sendPlayback(ctx, http.MethodPut, "/me/player/pause", nil, nil)
 }
 
 func (c *Client) Next(ctx context.Context) error {
-	return c.post(ctx, "/me/player/next", nil)
+	return c.sendPlayback(ctx, http.MethodPost, "/me/player/next", nil, nil)
 }
 
 func (c *Client) Previous(ctx context.Context) error {
-	return c.post(ctx, "/me/player/previous", nil)
+	return c.sendPlayback(ctx, http.MethodPost, "/me/player/previous", nil, nil)
 }
 
 func (c *Client) Seek(ctx context.Context, positionMS int) error {
-	params := url.Values{}
-	params.Set("position_ms", fmt.Sprint(positionMS))
-	return c.putParams(ctx, "/me/player/seek", params)
+	return c.sendPlayback(ctx, http.MethodPut, "/me/player/seek", url.Values{"position_ms": {fmt.Sprint(positionMS)}}, nil)
 }
 
 func (c *Client) Volume(ctx context.Context, volume int) error {
-	params := url.Values{}
-	params.Set("volume_percent", fmt.Sprint(volume))
-	return c.putParams(ctx, "/me/player/volume", params)
+	return c.sendPlayback(ctx, http.MethodPut, "/me/player/volume", url.Values{"volume_percent": {fmt.Sprint(volume)}}, nil)
 }
 
 func (c *Client) Shuffle(ctx context.Context, enabled bool) error {
-	params := url.Values{}
-	params.Set("state", fmt.Sprint(enabled))
-	return c.putParams(ctx, "/me/player/shuffle", params)
+	return c.sendPlayback(ctx, http.MethodPut, "/me/player/shuffle", url.Values{"state": {fmt.Sprint(enabled)}}, nil)
 }
 
 func (c *Client) Repeat(ctx context.Context, mode string) error {
-	params := url.Values{}
-	params.Set("state", mode)
-	return c.putParams(ctx, "/me/player/repeat", params)
+	return c.sendPlayback(ctx, http.MethodPut, "/me/player/repeat", url.Values{"state": {mode}}, nil)
 }
 
 func (c *Client) Devices(ctx context.Context) ([]Device, error) {
@@ -100,9 +93,38 @@ func (c *Client) Transfer(ctx context.Context, deviceID string) error {
 }
 
 func (c *Client) QueueAdd(ctx context.Context, uri string) error {
-	params := url.Values{}
-	params.Set("uri", uri)
-	return c.postParams(ctx, "/me/player/queue", params)
+	return c.sendPlayback(ctx, http.MethodPost, "/me/player/queue", url.Values{"uri": {uri}}, nil)
+}
+
+func (c *Client) sendPlayback(ctx context.Context, method, path string, params url.Values, payload any) error {
+	if c.device != "" {
+		if params == nil {
+			params = url.Values{}
+		}
+		params.Set("device_id", c.device)
+	}
+	err := c.send(ctx, method, path, params, payload, nil)
+	var apiErr APIError
+	if c.device == "" || !errors.As(err, &apiErr) || apiErr.Status != http.StatusNotFound {
+		return err
+	}
+	// Device IDs are opaque. Resolve names only after a rejected selector so
+	// raw IDs need neither a format heuristic nor permission to list devices.
+	devices, lookupErr := c.Devices(ctx)
+	if lookupErr != nil {
+		return lookupErr
+	}
+	if device, found := FindDevice(devices, c.device); found {
+		if device.ID == "" {
+			return fmt.Errorf("device %q has no usable ID", c.device)
+		}
+		if device.ID == c.device {
+			return err
+		}
+		params.Set("device_id", device.ID)
+		return c.send(ctx, method, path, params, payload, nil)
+	}
+	return err
 }
 
 func (c *Client) Queue(ctx context.Context) (Queue, error) {

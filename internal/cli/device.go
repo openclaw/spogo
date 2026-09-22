@@ -2,9 +2,9 @@ package cli
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/steipete/spogo/internal/app"
+	"github.com/steipete/spogo/internal/spotify"
 )
 
 type DeviceCmd struct {
@@ -54,11 +54,11 @@ func (cmd *DeviceSetCmd) Run(ctx *app.Context) error {
 		return err
 	}
 	id := cmd.Device
-	for _, device := range devices {
-		if strings.EqualFold(device.ID, cmd.Device) || strings.EqualFold(device.Name, cmd.Device) {
-			id = device.ID
-			break
+	if device, found := spotify.FindDevice(devices, cmd.Device); found {
+		if device.ID == "" {
+			return fmt.Errorf("device %q has no usable ID", cmd.Device)
 		}
+		id = device.ID
 	}
 	if err := client.Transfer(cmdCtx, id); err != nil {
 		return err
