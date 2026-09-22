@@ -1,14 +1,13 @@
 # Changelog
 
-## Unreleased
+## 0.13.1 - 2026-09-22
 
-- Replace cookie files atomically with owner-only permissions, preserving existing credentials on failed writes and preventing partial reads; share secure file replacement with config and OAuth storage
+**Highlights:** Protect stored credentials with atomic cookie writes and isolated profile paths, and target playback devices reliably by name or opaque ID.
 
-- Resolve `--device` names to Spotify device IDs for Web API playback commands, keep opaque IDs case-sensitive across engines, and stop attaching playback-only device parameters to unrelated mutations, thanks @VACInc
-
-- Reject negative, malformed, and overflowing seek positions before playback; preserve large valid millisecond values and include pagination offsets in top-track ranks
-
+- Replace cookie files atomically with owner-only POSIX permissions, preserving existing credentials on failed writes and preventing partial reads; share secure file replacement with config and OAuth storage
 - Keep cookie and Connect cache paths inside their profile directories, preventing profile names from overwriting or clearing another profile's credentials
+- Resolve `--device` names to Spotify device IDs for Web API playback commands, keep opaque IDs case-sensitive across engines, and stop attaching playback-only device parameters to unrelated mutations, thanks @VACInc
+- Reject negative, malformed, and overflowing seek positions before playback; preserve large valid millisecond values and include pagination offsets in top-track ranks
 
 ## 0.13.0 - 2026-09-13
 
