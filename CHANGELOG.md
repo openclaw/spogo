@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Replace cookie files atomically with owner-only permissions, preserving existing credentials on failed writes and preventing partial reads; share secure file replacement with config and OAuth storage
+
 - Resolve `--device` names to Spotify device IDs for Web API playback commands, keep opaque IDs case-sensitive across engines, and stop attaching playback-only device parameters to unrelated mutations, thanks @VACInc
 
 - Reject negative, malformed, and overflowing seek positions before playback; preserve large valid millisecond values and include pagination offsets in top-track ranks

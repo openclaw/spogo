@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/steipete/spogo/internal/atomicfile"
 )
 
 type StoredCookie struct {
@@ -50,7 +52,7 @@ func Write(path string, cookies []*http.Cookie) error {
 	if path == "" {
 		return errors.New("cookie path required")
 	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return err
 	}
 	stored := make([]StoredCookie, 0, len(cookies))
@@ -72,7 +74,11 @@ func Write(path string, cookies []*http.Cookie) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, data, 0o600)
+	path, err = atomicfile.ResolvePath(path)
+	if err != nil {
+		return err
+	}
+	return atomicfile.Write(path, data)
 }
 
 func jsonSafeExpiry(expires time.Time) time.Time {
