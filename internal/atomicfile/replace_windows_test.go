@@ -1,6 +1,6 @@
 //go:build windows
 
-package config
+package atomicfile
 
 import (
 	"errors"
@@ -10,15 +10,15 @@ import (
 	"time"
 )
 
-func TestReplaceConfigReturnsPermanentFailure(t *testing.T) {
+func TestReplaceReturnsPermanentFailure(t *testing.T) {
 	dir := t.TempDir()
-	err := replaceConfigFile(filepath.Join(dir, "missing"), filepath.Join(dir, "config"))
+	err := replace(filepath.Join(dir, "missing"), filepath.Join(dir, "config"))
 	if !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("expected original missing-source error, got %v", err)
 	}
 }
 
-func TestReplaceConfigWaitsForWindowsReader(t *testing.T) {
+func TestReplaceWaitsForWindowsReader(t *testing.T) {
 	dir := t.TempDir()
 	source, destination := filepath.Join(dir, "new"), filepath.Join(dir, "config")
 	for path, contents := range map[string]string{source: "new", destination: "old"} {
@@ -32,7 +32,7 @@ func TestReplaceConfigWaitsForWindowsReader(t *testing.T) {
 	}
 	defer func() { _ = reader.Close() }()
 	done := make(chan error, 1)
-	go func() { done <- replaceConfigFile(source, destination) }()
+	go func() { done <- replace(source, destination) }()
 	select {
 	case err := <-done:
 		t.Fatalf("replacement finished while reader held the file: %v", err)

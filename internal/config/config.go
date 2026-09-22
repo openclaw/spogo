@@ -14,6 +14,7 @@ import (
 
 	"github.com/gofrs/flock"
 	"github.com/pelletier/go-toml/v2"
+	"github.com/steipete/spogo/internal/atomicfile"
 )
 
 const (
@@ -86,7 +87,7 @@ func Save(path string, cfg *Config) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
-	path, err := resolveConfigPath(path)
+	path, err := atomicfile.ResolvePath(path)
 	if err != nil {
 		return err
 	}
@@ -94,19 +95,7 @@ func Save(path string, cfg *Config) error {
 	if err != nil {
 		return err
 	}
-	file, err := os.CreateTemp(filepath.Dir(path), ".config-*")
-	if err != nil {
-		return err
-	}
-	defer func() { _ = os.Remove(file.Name()) }()
-	if _, err := file.Write(data); err != nil {
-		_ = file.Close()
-		return err
-	}
-	if err := file.Close(); err != nil {
-		return err
-	}
-	return replaceConfigFile(file.Name(), path)
+	return atomicfile.Write(path, data)
 }
 
 // Update serializes a load-modify-save transaction for the shared config file.
@@ -124,7 +113,7 @@ func Update(ctx context.Context, path string, fn func(*Config) error) (*Config, 
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return nil, err
 	}
-	path, err := resolveConfigPath(path)
+	path, err := atomicfile.ResolvePath(path)
 	if err != nil {
 		return nil, err
 	}
@@ -159,33 +148,6 @@ func Update(ctx context.Context, path string, fn func(*Config) error) (*Config, 
 		return nil, err
 	}
 	return cfg, nil
-}
-
-// Resolve aliases before locking and replacing the file so managed config
-// symlinks keep their targets and concurrent aliases share the same lock.
-func resolveConfigPath(path string) (string, error) {
-	for range 255 {
-		resolved, err := filepath.EvalSymlinks(path)
-		if err == nil {
-			return resolved, nil
-		}
-		if !errors.Is(err, os.ErrNotExist) {
-			return "", err
-		}
-		target, linkErr := os.Readlink(path)
-		if linkErr != nil {
-			dir, err := filepath.EvalSymlinks(filepath.Dir(path))
-			if err != nil {
-				return "", err
-			}
-			return filepath.Join(dir, filepath.Base(path)), nil
-		}
-		if !filepath.IsAbs(target) {
-			target = filepath.Join(filepath.Dir(path), target)
-		}
-		path = target
-	}
-	return "", errors.New("too many config symlinks")
 }
 
 func Default() *Config {

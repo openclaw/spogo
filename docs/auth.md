@@ -180,6 +180,8 @@ For non-interactive input:
 printf '%s\n%s\n' "sp_dc=..." "sp_t=..." | spogo auth paste --no-input
 ```
 
+Cookie imports and pastes replace the JSON file atomically using a synced temporary file. On POSIX systems, every replacement is mode `0600`, even when an older file had broader permissions; newly created cookie directories are mode `0700`. Failed writes preserve the previous file, and concurrent readers never see a partially written cookie jar.
+
 ### Cookie status and clearing
 
 ```bash

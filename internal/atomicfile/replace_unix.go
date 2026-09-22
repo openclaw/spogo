@@ -1,9 +1,9 @@
 //go:build !windows
 
-package config
+package atomicfile
 
 import "os"
 
-func replaceConfigFile(source, destination string) error {
+func replace(source, destination string) error {
 	return os.Rename(source, destination)
 }

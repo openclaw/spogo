@@ -10,6 +10,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/steipete/spogo/internal/atomicfile"
 )
 
 type OAuthTokenStatus struct {
@@ -98,35 +100,7 @@ func saveOAuthTokenUnlocked(path string, token OAuthToken) error {
 		return err
 	}
 	data = append(data, '\n')
-	tmp, err := os.CreateTemp(dir, ".oauth-token-*")
-	if err != nil {
-		return err
-	}
-	tmpPath := tmp.Name()
-	committed := false
-	defer func() {
-		_ = tmp.Close()
-		if !committed {
-			_ = os.Remove(tmpPath)
-		}
-	}()
-	if err := tmp.Chmod(0o600); err != nil {
-		return err
-	}
-	if _, err := tmp.Write(data); err != nil {
-		return err
-	}
-	if err := tmp.Sync(); err != nil {
-		return err
-	}
-	if err := tmp.Close(); err != nil {
-		return err
-	}
-	if err := replaceOAuthTokenFile(tmpPath, path); err != nil {
-		return err
-	}
-	committed = true
-	return nil
+	return atomicfile.Write(path, data)
 }
 
 func OAuthStatus(path string) (OAuthTokenStatus, error) {
