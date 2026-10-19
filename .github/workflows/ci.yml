@@ -47,10 +47,10 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            go: '1.26.7'
-            toolchain: go1.26.7
+            go: '1.27.2'
+            toolchain: go1.27.2
             binary: spogo-ci
-          - os: macos-15
+          - os: xcode-27
             toolchain: auto
             binary: spogo-ci
           - os: windows-latest
@@ -58,6 +58,7 @@ jobs:
             binary: spogo-ci.exe
     env:
       GOTOOLCHAIN: ${{ matrix.toolchain }}
+      MACOSX_DEPLOYMENT_TARGET: '13.0'
     defaults:
       run:
         shell: bash

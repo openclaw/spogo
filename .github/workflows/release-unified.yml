@@ -7,6 +7,10 @@ on:
         description: "Version to release (for example, 0.10.2)"
         required: true
         type: string
+      dry_run:
+        description: Build and verify without creating tags or releases
+        type: boolean
+        default: false
 
 permissions: {}
 
@@ -21,6 +25,7 @@ jobs:
     uses: openclaw/release-workflows/.github/workflows/release-go-cli.yml@v1
     with:
       version: ${{ inputs.version }}
+      dry-run: ${{ inputs.dry_run }}
       repository-type: openclaw
       homebrew-tap: steipete/homebrew-tap
       homebrew-formula: spogo
