@@ -23,6 +23,7 @@ builds:
     binary: spogo
     env:
       - CGO_ENABLED=1
+      - MACOSX_DEPLOYMENT_TARGET=13.0
     ldflags:
       - -s -w -X github.com/steipete/spogo/internal/cli.version={{ .Version }}
     targets:

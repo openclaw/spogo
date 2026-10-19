@@ -2,7 +2,7 @@ module github.com/steipete/spogo
 
 go 1.26.7
 
-toolchain go1.27.1
+toolchain go1.27.2
 
 require (
 	github.com/alecthomas/kong v1.16.1

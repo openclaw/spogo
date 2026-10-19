@@ -56,6 +56,16 @@ gh run watch <run-id> --exit-status
 
 Watch validation, tag creation, build/sign/notarize, draft creation, independent verification, publication, Homebrew handoff, and closeout. The legacy workflow in `release-legacy.yml` is manual-only and is not the production release path.
 
+Validate the current version without publishing, creating tags, or updating Homebrew:
+
+```sh
+gh workflow run release-unified.yml -f version=X.Y.Z -f dry_run=true
+```
+
+The legacy workflow also accepts `dry_run=true` for snapshot-only validation of an
+existing `tag`. Both repo-local macOS jobs use Apple Silicon `xcode-27` runners.
+The release configuration explicitly retains the shipped macOS 13 minimum.
+
 After success:
 
 - Download every published asset listed in `SHA256SUMS` and verify its SHA-256 digest.

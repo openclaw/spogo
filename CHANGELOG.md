@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Build with Go 1.27.2 and matching golangci-lint 2.15.0, run macOS CI and legacy release validation on `xcode-27`, retain the Go 1.26.7 source minimum and macOS 13 deployment target, and add non-publishing release dry runs.
+
 ## 0.13.1 - 2026-09-22
 
 **Highlights:** Protect stored credentials with atomic cookie writes and isolated profile paths, and target playback devices reliably by name or opaque ID.
