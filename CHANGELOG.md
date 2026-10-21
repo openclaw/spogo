@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Security: build source, CI, and releases with Go 1.27.3 for the GO-2026-6809 certificate-validation fix, retaining the Go 1.26.7 source minimum.
+
 - Build with Go 1.27.2 and matching golangci-lint 2.15.0, run macOS CI and legacy release validation on `xcode-27`, retain the Go 1.26.7 source minimum and macOS 13 deployment target, and add non-publishing release dry runs.
 
 ## 0.13.1 - 2026-09-22
