@@ -84,8 +84,10 @@ func TestClientEndpoints(t *testing.T) {
 		_ = json.NewEncoder(w).Encode(followedArtistsResponse{Artists: artistsContainer{Items: []artistItem{{ID: "ar1", Name: "Artist"}}, Total: 1}})
 	})
 	mux.HandleFunc("/me/library", func(w http.ResponseWriter, r *http.Request) {
-		if got := r.URL.Query().Get("uris"); got != "spotify:artist:ar1" {
-			t.Errorf("follow artists uris = %q, want spotify:artist:ar1", got)
+		switch got := r.URL.Query().Get("uris"); got {
+		case "spotify:artist:ar1", "spotify:track:t1":
+		default:
+			t.Errorf("library uris = %q", got)
 		}
 		w.WriteHeader(http.StatusNoContent)
 	})
@@ -237,7 +239,7 @@ func TestClientEndpoints(t *testing.T) {
 	if _, _, err := client.LibraryAlbums(context.Background(), 1, 0); err != nil {
 		t.Fatalf("library albums: %v", err)
 	}
-	if err := client.LibraryModify(context.Background(), "/me/tracks", []string{"t1"}, http.MethodPut); err != nil {
+	if err := client.LibraryModify(context.Background(), "track", []string{"t1"}, http.MethodPut); err != nil {
 		t.Fatalf("library modify: %v", err)
 	}
 	if err := client.FollowArtists(context.Background(), []string{"ar1"}, http.MethodPut); err != nil {

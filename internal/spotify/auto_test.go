@@ -101,7 +101,7 @@ func TestAutoLibraryFallbacks(t *testing.T) {
 	if err != nil || count != 1 || after != "next" || len(artists) != 1 {
 		t.Fatalf("followed artists: %v %#v %d %s", err, artists, count, after)
 	}
-	if err := client.LibraryModify(ctx, "me/tracks", []string{"1"}, "put"); err != nil {
+	if err := client.LibraryModify(ctx, "track", []string{"1"}, "put"); err != nil {
 		t.Fatalf("library modify: %v", err)
 	}
 	if calls["LibraryTracks"] != 2 || calls["FollowedArtists"] != 2 || calls["LibraryModify"] != 2 {
@@ -290,7 +290,7 @@ func TestAutoPassThrough(t *testing.T) {
 	_, _ = client.Queue(ctx)
 	_, _, _ = client.LibraryTracks(ctx, 1, 0)
 	_, _, _ = client.LibraryAlbums(ctx, 1, 0)
-	_ = client.LibraryModify(ctx, "me/tracks", []string{"1"}, "put")
+	_ = client.LibraryModify(ctx, "track", []string{"1"}, "put")
 	_ = client.FollowArtists(ctx, []string{"1"}, "put")
 	_, _, _, _ = client.FollowedArtists(ctx, 1, "")
 	_, _, _ = client.Playlists(ctx, 1, 0)

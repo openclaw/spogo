@@ -176,7 +176,7 @@ func runLibraryModify(ctx *app.Context, inputs []string, kind, method string) er
 	if kind == "artist" {
 		err = client.FollowArtists(cmdCtx, ids, method)
 	} else {
-		err = client.LibraryModify(cmdCtx, "/me/"+kind+"s", ids, method)
+		err = client.LibraryModify(cmdCtx, kind, ids, method)
 	}
 	if err != nil {
 		return err

@@ -164,9 +164,9 @@ func (c *ConnectClient) LibraryAlbums(ctx context.Context, limit, offset int) ([
 	})
 }
 
-func (c *ConnectClient) LibraryModify(ctx context.Context, path string, ids []string, method string) error {
+func (c *ConnectClient) LibraryModify(ctx context.Context, kind string, ids []string, method string) error {
 	return withWebFallback(c, func(web *Client) error {
-		return web.LibraryModify(ctx, path, ids, method)
+		return web.LibraryModify(ctx, kind, ids, method)
 	})
 }
 

@@ -475,7 +475,7 @@ func TestFallbackDelegatesToWeb(t *testing.T) {
 	if _, _, err := client.LibraryAlbums(ctx, 1, 0); err != nil {
 		t.Fatalf("library albums: %v", err)
 	}
-	if err := client.LibraryModify(ctx, "/me/tracks", []string{"t1"}, "PUT"); err != nil {
+	if err := client.LibraryModify(ctx, "track", []string{"t1"}, "PUT"); err != nil {
 		t.Fatalf("library modify: %v", err)
 	}
 	if err := client.FollowArtists(ctx, []string{"ar1"}, "PUT"); err != nil {

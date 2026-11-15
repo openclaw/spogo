@@ -34,10 +34,17 @@ func (c *Client) libraryTracks(ctx context.Context, path string, limit, offset i
 	return items, raw.Total, nil
 }
 
-func (c *Client) LibraryModify(ctx context.Context, path string, ids []string, method string) error {
+// LibraryModify saves or removes tracks and albums. Spotify replaced the
+// entity specific /me/tracks and /me/albums endpoints with /me/library in the
+// February 2026 Web API change; the new endpoint takes URIs, not ids.
+func (c *Client) LibraryModify(ctx context.Context, kind string, ids []string, method string) error {
+	uris := make([]string, 0, len(ids))
+	for _, id := range ids {
+		uris = append(uris, "spotify:"+kind+":"+id)
+	}
 	params := url.Values{}
-	params.Set("ids", joinComma(ids))
-	return c.send(ctx, method, path, params, nil, nil)
+	params.Set("uris", joinComma(uris))
+	return c.send(ctx, method, "/me/library", params, nil, nil)
 }
 
 func (c *Client) FollowArtists(ctx context.Context, ids []string, method string) error {
