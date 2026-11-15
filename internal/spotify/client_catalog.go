@@ -11,6 +11,10 @@ import (
 // caller's result count survives the reduced ceiling.
 const searchPageLimit = 10
 
+// searchMaxOffset is the highest offset Spotify accepts on /search. Paging
+// stops there instead of requesting a page the API will reject.
+const searchMaxOffset = 1000
+
 func (c *Client) Search(ctx context.Context, kind, query string, limit, offset int) (SearchResult, error) {
 	if limit <= 0 {
 		limit = searchPageLimit
@@ -19,7 +23,7 @@ func (c *Client) Search(ctx context.Context, kind, query string, limit, offset i
 	remaining := limit
 	pageOffset := offset
 	first := true
-	for remaining > 0 {
+	for remaining > 0 && pageOffset <= searchMaxOffset {
 		pageSize := remaining
 		if pageSize > searchPageLimit {
 			pageSize = searchPageLimit

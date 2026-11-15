@@ -84,6 +84,23 @@ func TestSearchStopsWhenResultsRunOut(t *testing.T) {
 	}
 }
 
+func TestSearchStopsAtMaximumOffset(t *testing.T) {
+	handler, calls := searchPages(t, 1010)
+	client, closeFn := newTestClient(t, handler)
+	defer closeFn()
+
+	res, err := client.Search(context.Background(), "track", "song", 20, 995)
+	if err != nil {
+		t.Fatalf("search: %v", err)
+	}
+	if got := fmt.Sprint(*calls); got != "[10/995]" {
+		t.Fatalf("requests = %s, want to stop before exceeding the offset ceiling", got)
+	}
+	if len(res.Items) != 10 {
+		t.Fatalf("items = %d, want the page that fits", len(res.Items))
+	}
+}
+
 func TestSearchPagesFromOffset(t *testing.T) {
 	handler, calls := searchPages(t, 40)
 	client, closeFn := newTestClient(t, handler)
