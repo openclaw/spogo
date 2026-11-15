@@ -6,7 +6,49 @@ import (
 	"net/url"
 )
 
+// searchPageLimit is the largest page one /search request may ask for in
+// Spotify's Development Mode. Larger requests are served by paging, so the
+// caller's result count survives the reduced ceiling.
+const searchPageLimit = 10
+
 func (c *Client) Search(ctx context.Context, kind, query string, limit, offset int) (SearchResult, error) {
+	if limit <= 0 {
+		limit = searchPageLimit
+	}
+	result := SearchResult{Type: kind, Limit: limit, Offset: offset, Items: make([]Item, 0, limit)}
+	remaining := limit
+	pageOffset := offset
+	first := true
+	for remaining > 0 {
+		pageSize := remaining
+		if pageSize > searchPageLimit {
+			pageSize = searchPageLimit
+		}
+		container, err := c.searchPage(ctx, kind, query, pageSize, pageOffset)
+		if err != nil {
+			return SearchResult{}, err
+		}
+		if first {
+			result.Total = container.Total
+			first = false
+		}
+		for _, raw := range container.Items {
+			item, err := mapSearchItem(kind, raw)
+			if err != nil {
+				return SearchResult{}, err
+			}
+			result.Items = append(result.Items, item)
+		}
+		if len(container.Items) < pageSize {
+			break
+		}
+		remaining -= len(container.Items)
+		pageOffset += len(container.Items)
+	}
+	return result, nil
+}
+
+func (c *Client) searchPage(ctx context.Context, kind, query string, limit, offset int) (searchContainer, error) {
 	params := url.Values{}
 	params.Set("q", query)
 	params.Set("type", kind)
@@ -14,27 +56,13 @@ func (c *Client) Search(ctx context.Context, kind, query string, limit, offset i
 	params.Set("offset", fmt.Sprint(offset))
 	var response map[string]searchContainer
 	if err := c.get(ctx, "/search", params, &response); err != nil {
-		return SearchResult{}, err
+		return searchContainer{}, err
 	}
 	container, ok := response[kind+"s"]
 	if !ok {
-		return SearchResult{}, fmt.Errorf("missing %s result", kind)
+		return searchContainer{}, fmt.Errorf("missing %s result", kind)
 	}
-	items := make([]Item, 0, len(container.Items))
-	for _, raw := range container.Items {
-		item, err := mapSearchItem(kind, raw)
-		if err != nil {
-			return SearchResult{}, err
-		}
-		items = append(items, item)
-	}
-	return SearchResult{
-		Type:   kind,
-		Limit:  container.Limit,
-		Offset: container.Offset,
-		Total:  container.Total,
-		Items:  items,
-	}, nil
+	return container, nil
 }
 
 func (c *Client) GetTrack(ctx context.Context, id string) (Item, error) {
