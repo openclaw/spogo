@@ -41,10 +41,13 @@ func (c *Client) LibraryModify(ctx context.Context, path string, ids []string, m
 }
 
 func (c *Client) FollowArtists(ctx context.Context, ids []string, method string) error {
+	uris := make([]string, 0, len(ids))
+	for _, id := range ids {
+		uris = append(uris, "spotify:artist:"+id)
+	}
 	params := url.Values{}
-	params.Set("type", "artist")
-	params.Set("ids", joinComma(ids))
-	return c.send(ctx, method, "/me/following", params, nil, nil)
+	params.Set("uris", joinComma(uris))
+	return c.send(ctx, method, "/me/library", params, nil, nil)
 }
 
 func (c *Client) Playlists(ctx context.Context, limit, offset int) ([]Item, int, error) {

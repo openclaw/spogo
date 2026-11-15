@@ -62,6 +62,12 @@ type playlistItem struct {
 	Owner       struct {
 		DisplayName string `json:"display_name"`
 	} `json:"owner"`
+	// Spotify renamed this container from "tracks" to "items" in the February
+	// 2026 Web API change, but Extended Quota Mode apps still receive "tracks".
+	// Either is absent for playlists the user neither owns nor collaborates on.
+	Items struct {
+		Total int `json:"total"`
+	} `json:"items"`
 	Tracks struct {
 		Total int `json:"total"`
 	} `json:"tracks"`
@@ -134,11 +140,24 @@ type playlistListResponse struct {
 	Total int            `json:"total"`
 }
 
+// playlistTrackEntry is one entry of a playlist listing. Spotify renamed this
+// wrapper from "track" to "item" in the February 2026 Web API change, but
+// Extended Quota Mode apps still receive "track", so both are accepted.
+type playlistTrackEntry struct {
+	Item  trackItem `json:"item"`
+	Track trackItem `json:"track"`
+}
+
+func (e playlistTrackEntry) track() trackItem {
+	if e.Item.ID != "" {
+		return e.Item
+	}
+	return e.Track
+}
+
 type playlistTracksResponse struct {
-	Items []struct {
-		Track trackItem `json:"track"`
-	} `json:"items"`
-	Total int `json:"total"`
+	Items []playlistTrackEntry `json:"items"`
+	Total int                  `json:"total"`
 }
 
 type userProfile struct {

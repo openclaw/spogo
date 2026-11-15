@@ -85,6 +85,15 @@ func mapArtist(a artistItem) Item {
 	}
 }
 
+// playlistTotal prefers the post-2026 "items" container and falls back to
+// "tracks", which Extended Quota Mode apps still receive.
+func playlistTotal(p playlistItem) int {
+	if p.Items.Total != 0 {
+		return p.Items.Total
+	}
+	return p.Tracks.Total
+}
+
 func mapPlaylist(p playlistItem) Item {
 	return Item{
 		ID:          p.ID,
@@ -93,7 +102,7 @@ func mapPlaylist(p playlistItem) Item {
 		Type:        "playlist",
 		URL:         externalURL(p.ExternalURLs),
 		Owner:       p.Owner.DisplayName,
-		TotalTracks: p.Tracks.Total,
+		TotalTracks: playlistTotal(p),
 		Description: p.Description,
 	}
 }
