@@ -8,10 +8,26 @@ import (
 	"testing"
 )
 
-func TestCreatePlaylistMissingUser(t *testing.T) {
+func TestCreatePlaylistUsesCurrentUserEndpoint(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/me", func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewEncoder(w).Encode(userProfile{})
+		t.Error("playlist creation must not request a user profile")
+		w.WriteHeader(http.StatusForbidden)
+	})
+	mux.HandleFunc("/me/playlists", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("method = %s, want POST", r.Method)
+		}
+		var payload map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Errorf("decode: %v", err)
+			return
+		}
+		if payload["name"] != "Name" || payload["public"] != true || payload["collaborative"] != false {
+			t.Errorf("unexpected playlist payload: %v", payload)
+		}
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(map[string]any{"id": "created", "name": "Name"})
 	})
 	srv := httptest.NewServer(mux)
 	defer srv.Close()
@@ -19,8 +35,9 @@ func TestCreatePlaylistMissingUser(t *testing.T) {
 	if err != nil {
 		t.Fatalf("client: %v", err)
 	}
-	if _, err := client.CreatePlaylist(context.Background(), "Name", true, false); err == nil {
-		t.Fatalf("expected error")
+	item, err := client.CreatePlaylist(context.Background(), "Name", true, false)
+	if err != nil || item.ID != "created" {
+		t.Fatalf("playlist = %#v, error = %v", item, err)
 	}
 }
 

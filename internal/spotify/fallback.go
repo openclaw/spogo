@@ -185,8 +185,8 @@ func (c *fallbackClient) LibraryAlbums(ctx context.Context, limit, offset int) (
 	return c.web.LibraryAlbums(ctx, limit, offset)
 }
 
-func (c *fallbackClient) LibraryModify(ctx context.Context, path string, ids []string, method string) error {
-	return c.web.LibraryModify(ctx, path, ids, method)
+func (c *fallbackClient) LibraryModify(ctx context.Context, kind string, ids []string, method string) error {
+	return c.web.LibraryModify(ctx, kind, ids, method)
 }
 
 func (c *fallbackClient) FollowArtists(ctx context.Context, ids []string, method string) error {

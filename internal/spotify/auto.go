@@ -246,9 +246,9 @@ func (c *autoClient) LibraryAlbums(ctx context.Context, limit, offset int) ([]It
 	})
 }
 
-func (c *autoClient) LibraryModify(ctx context.Context, path string, ids []string, method string) error {
+func (c *autoClient) LibraryModify(ctx context.Context, kind string, ids []string, method string) error {
 	return autoVoid(c, func(api API) error {
-		return api.LibraryModify(ctx, path, ids, method)
+		return api.LibraryModify(ctx, kind, ids, method)
 	})
 }
 
