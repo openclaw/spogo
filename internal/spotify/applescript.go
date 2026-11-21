@@ -248,9 +248,9 @@ func (c *AppleScriptClient) LibraryAlbums(ctx context.Context, limit, offset int
 	return nil, 0, ErrUnsupported
 }
 
-func (c *AppleScriptClient) LibraryModify(ctx context.Context, path string, ids []string, method string) error {
+func (c *AppleScriptClient) LibraryModify(ctx context.Context, kind string, ids []string, method string) error {
 	if c.fallback != nil {
-		return c.fallback.LibraryModify(ctx, path, ids, method)
+		return c.fallback.LibraryModify(ctx, kind, ids, method)
 	}
 	return ErrUnsupported
 }

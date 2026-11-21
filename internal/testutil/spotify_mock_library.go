@@ -20,11 +20,11 @@ func (m *SpotifyMock) LibraryAlbums(ctx context.Context, limit, offset int) ([]s
 	return m.LibraryAlbumsFn(ctx, limit, offset)
 }
 
-func (m *SpotifyMock) LibraryModify(ctx context.Context, path string, ids []string, method string) error {
+func (m *SpotifyMock) LibraryModify(ctx context.Context, kind string, ids []string, method string) error {
 	if m.LibraryModifyFn == nil {
 		return ErrNotImplemented
 	}
-	return m.LibraryModifyFn(ctx, path, ids, method)
+	return m.LibraryModifyFn(ctx, kind, ids, method)
 }
 
 func (m *SpotifyMock) FollowArtists(ctx context.Context, ids []string, method string) error {

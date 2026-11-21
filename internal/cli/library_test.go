@@ -117,8 +117,8 @@ func TestLibraryArtistsListCmdOffsetError(t *testing.T) {
 func TestLibraryAlbumsRemoveCmd(t *testing.T) {
 	ctx, _, _ := testutil.NewTestContext(t, output.FormatPlain)
 	mock := &testutil.SpotifyMock{
-		LibraryModifyFn: func(ctx context.Context, path string, ids []string, method string) error {
-			if path != "/me/albums" || method != "DELETE" {
+		LibraryModifyFn: func(ctx context.Context, kind string, ids []string, method string) error {
+			if kind != "album" || method != "DELETE" {
 				t.Fatalf("unexpected path/method")
 			}
 			return nil
@@ -165,8 +165,8 @@ func TestLibraryAlbumsListCmdError(t *testing.T) {
 func TestLibraryAlbumsAddCmd(t *testing.T) {
 	ctx, _, _ := testutil.NewTestContext(t, output.FormatPlain)
 	mock := &testutil.SpotifyMock{
-		LibraryModifyFn: func(ctx context.Context, path string, ids []string, method string) error {
-			if path != "/me/albums" || method != "PUT" {
+		LibraryModifyFn: func(ctx context.Context, kind string, ids []string, method string) error {
+			if kind != "album" || method != "PUT" {
 				t.Fatalf("unexpected path/method")
 			}
 			return nil

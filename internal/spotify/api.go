@@ -25,7 +25,7 @@ type API interface {
 	Queue(ctx context.Context) (Queue, error)
 	LibraryTracks(ctx context.Context, limit, offset int) ([]Item, int, error)
 	LibraryAlbums(ctx context.Context, limit, offset int) ([]Item, int, error)
-	LibraryModify(ctx context.Context, path string, ids []string, method string) error
+	LibraryModify(ctx context.Context, kind string, ids []string, method string) error
 	FollowArtists(ctx context.Context, ids []string, method string) error
 	FollowedArtists(ctx context.Context, limit int, after string) ([]Item, int, string, error)
 	Playlists(ctx context.Context, limit, offset int) ([]Item, int, error)

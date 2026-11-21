@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Restore playlist creation, item listing and mutations, and library saves/follows after Spotify's February 2026 Web API migration; retain both old and new response shapes and page search requests to preserve requested result counts. Thanks @RtYkk. (#94, #93)
+- Document that Connect playlist listings cannot distinguish unknown track counts from empty playlists; use the Web API for available counts. Thanks @RtYkk. (#96)
+- Refresh compatible Go dependencies, including Kong, SweetCookie, SQLite, and Go support libraries, while retaining the Go 1.26.7 source minimum.
+- Build with Go 1.27.4 to fix the reachable HTTP-server vulnerability GO-2026-6859; retain the Go 1.26.7 source minimum.
+
 ## 0.13.2 - 2026-10-20
 
 **Highlights:** Fix reachable Go certificate-validation vulnerabilities while retaining existing platform minimums.

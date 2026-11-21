@@ -13,31 +13,28 @@ func (c *Client) PlaylistTracks(ctx context.Context, id string, limit, offset in
 	params.Set("limit", fmt.Sprint(limit))
 	params.Set("offset", fmt.Sprint(offset))
 	var raw playlistTracksResponse
-	if err := c.get(ctx, "/playlists/"+id+"/tracks", params, &raw); err != nil {
+	if err := c.get(ctx, "/playlists/"+id+"/items", params, &raw); err != nil {
 		return nil, 0, err
 	}
 	items := make([]Item, 0, len(raw.Items))
-	for _, item := range raw.Items {
-		if item.Track.ID == "" {
+	for _, entry := range raw.Items {
+		track := entry.track()
+		if track.ID == "" {
 			continue
 		}
-		items = append(items, mapTrack(item.Track))
+		items = append(items, mapTrack(track))
 	}
 	return items, raw.Total, nil
 }
 
 func (c *Client) CreatePlaylist(ctx context.Context, name string, public, collaborative bool) (Item, error) {
-	userID, err := c.currentUserID(ctx)
-	if err != nil {
-		return Item{}, err
-	}
 	payload := map[string]any{
 		"name":          name,
 		"public":        public,
 		"collaborative": collaborative,
 	}
 	var raw playlistItem
-	if err := c.postJSON(ctx, "/users/"+userID+"/playlists", payload, &raw); err != nil {
+	if err := c.postJSON(ctx, "/me/playlists", payload, &raw); err != nil {
 		return Item{}, err
 	}
 	return mapPlaylist(raw), nil
@@ -47,16 +44,16 @@ func (c *Client) AddTracks(ctx context.Context, playlistID string, uris []string
 	payload := map[string]any{
 		"uris": uris,
 	}
-	return c.postJSON(ctx, "/playlists/"+playlistID+"/tracks", payload, nil)
+	return c.postJSON(ctx, "/playlists/"+playlistID+"/items", payload, nil)
 }
 
 func (c *Client) RemoveTracks(ctx context.Context, playlistID string, uris []string) error {
-	tracks := make([]map[string]string, 0, len(uris))
+	items := make([]map[string]string, 0, len(uris))
 	for _, uri := range uris {
-		tracks = append(tracks, map[string]string{"uri": uri})
+		items = append(items, map[string]string{"uri": uri})
 	}
-	payload := map[string]any{"tracks": tracks}
-	return c.send(ctx, http.MethodDelete, "/playlists/"+playlistID+"/tracks", nil, payload, nil)
+	payload := map[string]any{"items": items}
+	return c.send(ctx, http.MethodDelete, "/playlists/"+playlistID+"/items", nil, payload, nil)
 }
 
 func (c *Client) FollowPlaylist(ctx context.Context, id string) error {
@@ -82,15 +79,4 @@ func (c *Client) IsFollowingPlaylist(ctx context.Context, id string) (bool, erro
 		return false, errors.New("expected one boolean in playlist contains response")
 	}
 	return *raw[0], nil
-}
-
-func (c *Client) currentUserID(ctx context.Context) (string, error) {
-	var raw userProfile
-	if err := c.get(ctx, "/me", nil, &raw); err != nil {
-		return "", err
-	}
-	if raw.ID == "" {
-		return "", errors.New("missing user id")
-	}
-	return raw.ID, nil
 }

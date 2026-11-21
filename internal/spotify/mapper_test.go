@@ -81,6 +81,49 @@ func TestMapSearchItemBadJSONOtherKinds(t *testing.T) {
 	}
 }
 
+func TestMapPlaylistTotalTracks(t *testing.T) {
+	var owned playlistItem
+	if err := json.Unmarshal([]byte(`{"id":"p1","items":{"total":31}}`), &owned); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if got := mapPlaylist(owned).TotalTracks; got != 31 {
+		t.Fatalf("TotalTracks = %d, want 31 from items.total", got)
+	}
+
+	// Spotify omits the count for playlists the user neither owns nor
+	// collaborates on.
+	var foreign playlistItem
+	if err := json.Unmarshal([]byte(`{"id":"p2"}`), &foreign); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if got := mapPlaylist(foreign).TotalTracks; got != 0 {
+		t.Fatalf("TotalTracks = %d, want 0 when the count is absent", got)
+	}
+
+	// Extended Quota Mode apps still receive the pre-2026 container name.
+	var legacy playlistItem
+	if err := json.Unmarshal([]byte(`{"id":"p3","tracks":{"total":7}}`), &legacy); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if got := mapPlaylist(legacy).TotalTracks; got != 7 {
+		t.Fatalf("TotalTracks = %d, want 7 from tracks.total", got)
+	}
+
+	var both playlistItem
+	if err := json.Unmarshal([]byte(`{"id":"p4","items":{"total":31},"tracks":{"total":7}}`), &both); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if got := mapPlaylist(both).TotalTracks; got != 31 {
+		t.Fatalf("TotalTracks = %d, want items.total to win", got)
+	}
+	if err := json.Unmarshal([]byte(`{"items":{"total":0},"tracks":{"total":7}}`), &both); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if got := mapPlaylist(both).TotalTracks; got != 0 {
+		t.Fatalf("TotalTracks = %d, want an explicit empty items container to win", got)
+	}
+}
+
 func TestExternalURL(t *testing.T) {
 	if externalURL(nil) != "" {
 		t.Fatalf("expected empty")

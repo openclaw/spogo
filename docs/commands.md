@@ -88,6 +88,8 @@ Use `--` before positional text that begins with a dash, for example `spogo sear
 
 Browse the catalog. Each subcommand takes a query plus `--limit N` and `--offset N`.
 
+Web API search fetches pages of at most ten results, preserving the requested result count for Development Mode apps. Pagination stops before requesting an offset above Spotify's limit of 1000.
+
 | Command | Returns |
 | --- | --- |
 | `spogo search track <query>` | Tracks. |

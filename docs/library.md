@@ -51,7 +51,11 @@ spogo library playlists list [--limit N]
 
 Lists one page of playlists you own or follow; use `--offset` to fetch further pages (maximum `--limit` is 50). To list **tracks** in a playlist, use `playlist tracks` below.
 
+The default Connect engine does not receive per-playlist track counts from Spotify. Its plain output reports `0` when the count is unknown, and JSON omits `total_tracks`; neither proves the playlist is empty. Use `spogo --engine web library playlists list` for counts where Spotify makes them available, subject to Web API rate limits.
+
 Playlist and library collection listings use the internal web-player API. Saving/removing tracks or albums and creating playlists still require the public Web API, so those mutations may be rate-limited.
+
+Track and album saves/removals and artist follows/unfollows are split into batches of at most 40 items for the current Web API. If a batch fails, later batches are not sent; earlier successful batches remain applied.
 
 ## playlist follow / unfollow / following
 

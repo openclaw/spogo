@@ -76,13 +76,31 @@ func TestClientEndpoints(t *testing.T) {
 		}{{Album: albumItem{ID: "a1", Name: "Album"}}}, Total: 1})
 	})
 	mux.HandleFunc("/me/following", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet {
-			_ = json.NewEncoder(w).Encode(followedArtistsResponse{Artists: artistsContainer{Items: []artistItem{{ID: "ar1", Name: "Artist"}}, Total: 1}})
+		if r.Method != http.MethodGet {
+			t.Errorf("follow artists must use /me/library, got %s %s", r.Method, r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
 			return
+		}
+		_ = json.NewEncoder(w).Encode(followedArtistsResponse{Artists: artistsContainer{Items: []artistItem{{ID: "ar1", Name: "Artist"}}, Total: 1}})
+	})
+	mux.HandleFunc("/me/library", func(w http.ResponseWriter, r *http.Request) {
+		switch got := r.URL.Query().Get("uris"); got {
+		case "spotify:artist:ar1", "spotify:track:t1":
+		default:
+			t.Errorf("library uris = %q", got)
 		}
 		w.WriteHeader(http.StatusNoContent)
 	})
 	mux.HandleFunc("/me/playlists", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			body, _ := io.ReadAll(r.Body)
+			if len(body) == 0 {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			_ = json.NewEncoder(w).Encode(playlistItem{ID: "p2", Name: "Created"})
+			return
+		}
 		_ = json.NewEncoder(w).Encode(playlistListResponse{Items: []playlistItem{{ID: "p1", Name: "Playlist"}}, Total: 1})
 	})
 	mux.HandleFunc("/me/top/tracks", func(w http.ResponseWriter, r *http.Request) {
@@ -138,25 +156,25 @@ func TestClientEndpoints(t *testing.T) {
 			Limit:   3,
 		})
 	})
-	mux.HandleFunc("/playlists/p1/tracks", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodDelete || r.Method == http.MethodPost {
+	mux.HandleFunc("/playlists/p1/items", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodDelete:
+			var payload struct {
+				Items []map[string]string `json:"items"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil || len(payload.Items) != 1 {
+				t.Errorf("remove tracks payload = %+v, err = %v", payload, err)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
 			w.WriteHeader(http.StatusNoContent)
-			return
+		case http.MethodPost:
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			_ = json.NewEncoder(w).Encode(playlistTracksResponse{Items: []playlistTrackEntry{{
+				Item: trackItem{ID: "t1", Name: "Track"},
+			}}, Total: 1})
 		}
-		_ = json.NewEncoder(w).Encode(playlistTracksResponse{Items: []struct {
-			Track trackItem `json:"track"`
-		}{{Track: trackItem{ID: "t1", Name: "Track"}}}, Total: 1})
-	})
-	mux.HandleFunc("/users/me/playlists", func(w http.ResponseWriter, r *http.Request) {
-		body, _ := io.ReadAll(r.Body)
-		if len(body) == 0 {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		_ = json.NewEncoder(w).Encode(playlistItem{ID: "p2", Name: "Created"})
-	})
-	mux.HandleFunc("/me", func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewEncoder(w).Encode(userProfile{ID: "me"})
 	})
 
 	srv := httptest.NewServer(mux)
@@ -218,7 +236,7 @@ func TestClientEndpoints(t *testing.T) {
 	if _, _, err := client.LibraryAlbums(context.Background(), 1, 0); err != nil {
 		t.Fatalf("library albums: %v", err)
 	}
-	if err := client.LibraryModify(context.Background(), "/me/tracks", []string{"t1"}, http.MethodPut); err != nil {
+	if err := client.LibraryModify(context.Background(), "track", []string{"t1"}, http.MethodPut); err != nil {
 		t.Fatalf("library modify: %v", err)
 	}
 	if err := client.FollowArtists(context.Background(), []string{"ar1"}, http.MethodPut); err != nil {

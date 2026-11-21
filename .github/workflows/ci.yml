@@ -25,7 +25,7 @@ jobs:
       - name: Deadcode
         run: |
           output_file=$(mktemp)
-          go run golang.org/x/tools/cmd/deadcode@v0.50.0 -test ./... > "$output_file"
+          go run golang.org/x/tools/cmd/deadcode@v0.52.0 -test ./... > "$output_file"
           if [ -s "$output_file" ]; then
             cat "$output_file"
             exit 1
@@ -47,8 +47,8 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            go: '1.27.3'
-            toolchain: go1.27.3
+            go: '1.27.4'
+            toolchain: go1.27.4
             binary: spogo-ci
           - os: xcode-27
             toolchain: auto

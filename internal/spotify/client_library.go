@@ -2,6 +2,7 @@ package spotify
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 )
@@ -34,17 +35,36 @@ func (c *Client) libraryTracks(ctx context.Context, path string, limit, offset i
 	return items, raw.Total, nil
 }
 
-func (c *Client) LibraryModify(ctx context.Context, path string, ids []string, method string) error {
-	params := url.Values{}
-	params.Set("ids", joinComma(ids))
-	return c.send(ctx, method, path, params, nil, nil)
+// LibraryModify saves or removes tracks and albums. Spotify replaced the
+// entity specific /me/tracks and /me/albums endpoints with /me/library in the
+// February 2026 Web API change; the new endpoint takes URIs, not ids.
+func (c *Client) LibraryModify(ctx context.Context, kind string, ids []string, method string) error {
+	uris := make([]string, 0, len(ids))
+	for _, id := range ids {
+		uris = append(uris, "spotify:"+kind+":"+id)
+	}
+	return c.modifyLibrary(ctx, uris, method)
 }
 
 func (c *Client) FollowArtists(ctx context.Context, ids []string, method string) error {
-	params := url.Values{}
-	params.Set("type", "artist")
-	params.Set("ids", joinComma(ids))
-	return c.send(ctx, method, "/me/following", params, nil, nil)
+	return c.LibraryModify(ctx, "artist", ids, method)
+}
+
+func (c *Client) modifyLibrary(ctx context.Context, uris []string, method string) error {
+	if len(uris) == 0 {
+		return errors.New("no library items provided")
+	}
+	// The replacement endpoint accepts fewer items than the old typed endpoints.
+	const batchSize = 40
+	for start := 0; start < len(uris); start += batchSize {
+		end := min(start+batchSize, len(uris))
+		params := url.Values{}
+		params.Set("uris", joinComma(uris[start:end]))
+		if err := c.send(ctx, method, "/me/library", params, nil, nil); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (c *Client) Playlists(ctx context.Context, limit, offset int) ([]Item, int, error) {

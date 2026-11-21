@@ -63,7 +63,7 @@ func TestPlaybackResolvesConfiguredDeviceName(t *testing.T) {
 
 func TestConfiguredDeviceDoesNotLeakToNonPlaybackMutation(t *testing.T) {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/me/tracks", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/me/library", func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Query().Get("device_id"); got != "" {
 			t.Errorf("unexpected device_id %q", got)
 		}
@@ -76,7 +76,7 @@ func TestConfiguredDeviceDoesNotLeakToNonPlaybackMutation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("client: %v", err)
 	}
-	if err := client.LibraryModify(context.Background(), "/me/tracks", []string{"t1"}, http.MethodPut); err != nil {
+	if err := client.LibraryModify(context.Background(), "track", []string{"t1"}, http.MethodPut); err != nil {
 		t.Fatalf("library modify: %v", err)
 	}
 }
